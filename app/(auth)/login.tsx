@@ -2,10 +2,8 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   Pressable,
   StyleSheet,
-  ToastAndroid,
   View,
 } from "react-native";
 import { router } from "expo-router";
@@ -14,14 +12,6 @@ import { AppText } from "../../components/AppText";
 import { signInWithGoogle } from "../../lib/auth";
 import { useAuthStore } from "../../store/authStore";
 
-function showToast(message: string) {
-  if (Platform.OS === "android") {
-    ToastAndroid.show(message, ToastAndroid.SHORT);
-    return;
-  }
-
-  Alert.alert("TripSync", message);
-}
 
 export default function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,19 +74,6 @@ export default function LoginScreen() {
             )}
           </Pressable>
 
-          {/* Line Login (stub) */}
-          <Pressable
-            accessibilityRole="button"
-            className="h-14 flex-row items-center justify-center rounded-xl bg-[#06C755] px-4"
-            disabled={isSubmitting}
-            onPress={() => showToast("Line login coming soon")}
-            style={styles.buttonShadow}
-          >
-            <AppText className="mr-3 text-lg font-bold text-white">L</AppText>
-            <AppText className="text-base font-semibold text-white">
-              Continue with Line
-            </AppText>
-          </Pressable>
 
           {/* Terms / footer */}
           <AppText className="mt-6 text-center text-xs leading-5 text-slate-400">
