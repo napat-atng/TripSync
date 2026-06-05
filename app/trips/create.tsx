@@ -23,10 +23,10 @@ export default function CreateTripScreen() {
       setIsSubmitting(true);
       const trip = await createTrip(data.name, data.description || null, user.id);
       router.replace(`/trips/${trip.id}/dashboard` as any);
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert(
         "Failed to create trip",
-        error instanceof Error ? error.message : "Please try again."
+        error?.message || JSON.stringify(error) || "Please try again."
       );
     } finally {
       setIsSubmitting(false);
