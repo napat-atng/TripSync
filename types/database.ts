@@ -37,22 +37,83 @@ export type Database = {
       };
       trip_members: {
         Row: {
+          id: string;
           trip_id: string;
-          user_id: string;
+          user_id: string | null;
+          display_name: string | null;
           role: string;
           joined_at: string;
         };
         Insert: {
+          id?: string;
           trip_id: string;
-          user_id: string;
+          user_id?: string | null;
+          display_name?: string | null;
           role: string;
           joined_at?: string;
         };
         Update: {
+          id?: string;
           trip_id?: string;
-          user_id?: string;
+          user_id?: string | null;
+          display_name?: string | null;
           role?: string;
           joined_at?: string;
+        };
+      };
+      survey_questions: {
+        Row: {
+          id: string;
+          trip_id: string;
+          type: "date_range" | "multiple_choice" | "budget_range" | "text";
+          question: string;
+          options: any | null;
+          order_index: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          type: "date_range" | "multiple_choice" | "budget_range" | "text";
+          question: string;
+          options?: any | null;
+          order_index?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          type?: "date_range" | "multiple_choice" | "budget_range" | "text";
+          question?: string;
+          options?: any | null;
+          order_index?: number;
+          created_at?: string;
+        };
+      };
+      survey_responses: {
+        Row: {
+          id: string;
+          trip_id: string;
+          question_id: string;
+          member_id: string;
+          answer: any;
+          submitted_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          question_id: string;
+          member_id: string;
+          answer: any;
+          submitted_at?: string;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          question_id?: string;
+          member_id?: string;
+          answer?: any;
+          submitted_at?: string;
         };
       };
     };

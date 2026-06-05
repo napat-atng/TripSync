@@ -21,7 +21,8 @@ export default function CreateTripScreen() {
     if (!user) return;
     try {
       setIsSubmitting(true);
-      const trip = await createTrip(data.name, data.description || null, user.id);
+      const displayName = user.email ? user.email.split("@")[0] : "Leader";
+      const trip = await createTrip(data.name, data.description || null, user.id, displayName);
       router.replace(`/trips/${trip.id}/dashboard` as any);
     } catch (error: any) {
       Alert.alert(

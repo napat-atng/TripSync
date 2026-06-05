@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ActivityIndicator, View } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
 
@@ -17,8 +18,9 @@ function useProtectedRoute() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
+    const isJoinRoute = (segments[0] as string) === "join";
 
-    if (!session && !inAuthGroup) {
+    if (!session && !inAuthGroup && !isJoinRoute) {
       // No session, redirect to login
       router.replace("/(auth)/login");
     } else if (session && inAuthGroup) {
@@ -62,5 +64,9 @@ export default function RootLayout() {
     );
   }
 
-  return <Slot />;
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Slot />
+    </GestureHandlerRootView>
+  );
 }

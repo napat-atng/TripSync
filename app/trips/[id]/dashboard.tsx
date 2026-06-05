@@ -40,7 +40,32 @@ export default function TripDashboardScreen() {
           <AppText className="mt-2 text-base text-slate-600">{trip.description}</AppText>
         )}
 
-        <View className="mt-10 rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+        <View className="mt-8 rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+          <AppText className="text-lg font-semibold text-slate-900">Trip Survey</AppText>
+          <AppText className="mt-1 mb-4 text-sm text-slate-500">
+            Gather preferences and availability from your trip members.
+          </AppText>
+          
+          <View className="flex-row space-x-3">
+            <Pressable
+              className="flex-1 h-12 items-center justify-center rounded-lg bg-teal-600"
+              onPress={() => router.push(`/trips/${trip.id}/survey/respond` as any)}
+            >
+              <AppText className="font-semibold text-white">Take Survey</AppText>
+            </Pressable>
+            
+            {trip.trip_members?.[0]?.role === "leader" && (
+              <Pressable
+                className="flex-1 h-12 items-center justify-center rounded-lg bg-slate-100 border border-slate-200"
+                onPress={() => router.push(`/trips/${trip.id}/survey/builder` as any)}
+              >
+                <AppText className="font-semibold text-slate-700">Edit Survey</AppText>
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        <View className="mt-6 rounded-xl bg-white p-6 shadow-sm border border-slate-200">
           <AppText className="text-lg font-semibold text-slate-900">Trip Members</AppText>
           <AppText className="mt-1 mb-4 text-sm text-slate-500">
             Invite your friends to start planning together.

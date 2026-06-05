@@ -6,7 +6,7 @@ function generateInviteToken() {
   return Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
 }
 
-export async function createTrip(name: string, description: string | null, userId: string) {
+export async function createTrip(name: string, description: string | null, userId: string, displayName: string | null) {
   const inviteToken = generateInviteToken();
 
   // 1. Insert into trips
@@ -31,6 +31,7 @@ export async function createTrip(name: string, description: string | null, userI
     {
       trip_id: tripData.id,
       user_id: userId,
+      display_name: displayName,
       role: "leader",
     },
   ]);
@@ -50,7 +51,7 @@ export async function getUserTrips(userId: string) {
     .from("trips")
     .select(`
       *,
-      trip_members!inner(user_id)
+      trip_members!inner(id, user_id, role)
     `)
     .eq("trip_members.user_id", userId)
     .order("created_at", { ascending: false });
