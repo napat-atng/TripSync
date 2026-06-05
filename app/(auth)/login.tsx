@@ -4,6 +4,7 @@ import {
   Alert,
   Platform,
   Pressable,
+  StyleSheet,
   ToastAndroid,
   View,
 } from "react-native";
@@ -29,10 +30,10 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     try {
       setIsSubmitting(true);
-      const { session } = await signInWithGoogle();
-      setSession(session);
+      const result = await signInWithGoogle();
 
-      if (session) {
+      if (result?.session) {
+        setSession(result.session);
         router.replace("/(tabs)/home");
       }
     } catch (error) {
@@ -46,44 +47,81 @@ export default function LoginScreen() {
   };
 
   return (
-    <View className="flex-1 justify-center bg-slate-50 px-6">
-      <View className="w-full max-w-sm self-center">
-        <View className="mb-10 items-center">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-lg bg-teal-600">
-            <AppText className="text-3xl font-bold text-white">T</AppText>
-          </View>
-          <AppText className="text-4xl font-bold text-slate-950">TripSync</AppText>
-          <AppText className="mt-3 text-center text-base text-slate-600">
-            Sign in to plan trips with your group.
+    <View className="flex-1 bg-slate-50">
+      {/* Top gradient hero area */}
+      <View className="flex-1 items-center justify-end pb-10">
+        <View className="mb-5 h-20 w-20 items-center justify-center rounded-2xl bg-teal-600" style={styles.logoShadow}>
+          <AppText className="text-4xl font-bold text-white">T</AppText>
+        </View>
+        <AppText className="text-4xl font-extrabold tracking-tight text-slate-900">
+          TripSync
+        </AppText>
+        <AppText className="mt-2 text-center text-base leading-6 text-slate-500">
+          Plan group trips together.{"\n"}Keep everyone in sync.
+        </AppText>
+      </View>
+
+      {/* Bottom button area */}
+      <View className="px-6 pb-14 pt-4">
+        <View className="w-full max-w-sm self-center">
+          {/* Google Login */}
+          <Pressable
+            accessibilityRole="button"
+            className="mb-3 h-14 flex-row items-center justify-center rounded-xl border border-slate-200 bg-white px-4"
+            disabled={isSubmitting}
+            onPress={handleGoogleLogin}
+            style={styles.buttonShadow}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#0f172a" />
+            ) : (
+              <>
+                <AppText className="mr-3 text-lg">G</AppText>
+                <AppText className="text-base font-semibold text-slate-800">
+                  Continue with Google
+                </AppText>
+              </>
+            )}
+          </Pressable>
+
+          {/* Line Login (stub) */}
+          <Pressable
+            accessibilityRole="button"
+            className="h-14 flex-row items-center justify-center rounded-xl bg-[#06C755] px-4"
+            disabled={isSubmitting}
+            onPress={() => showToast("Line login coming soon")}
+            style={styles.buttonShadow}
+          >
+            <AppText className="mr-3 text-lg font-bold text-white">L</AppText>
+            <AppText className="text-base font-semibold text-white">
+              Continue with Line
+            </AppText>
+          </Pressable>
+
+          {/* Terms / footer */}
+          <AppText className="mt-6 text-center text-xs leading-5 text-slate-400">
+            By continuing, you agree to TripSync's{"\n"}Terms of Service and
+            Privacy Policy.
           </AppText>
         </View>
-
-        <Pressable
-          accessibilityRole="button"
-          className="mb-3 h-14 flex-row items-center justify-center rounded-lg border border-slate-300 bg-white px-4"
-          disabled={isSubmitting}
-          onPress={handleGoogleLogin}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#0f172a" />
-          ) : (
-            <AppText className="text-base font-semibold text-slate-950">
-              Login with Google
-            </AppText>
-          )}
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          className="h-14 items-center justify-center rounded-lg bg-emerald-500 px-4"
-          disabled={isSubmitting}
-          onPress={() => showToast("Line login coming soon")}
-        >
-          <AppText className="text-base font-semibold text-white">
-            Login with Line
-          </AppText>
-        </Pressable>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  logoShadow: {
+    shadowColor: "#0f766e",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  buttonShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+});
