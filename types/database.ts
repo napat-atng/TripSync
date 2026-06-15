@@ -117,6 +117,30 @@ export type Database = {
         };
       };
     };
+      availability: {
+        Row: {
+          id: string;
+          trip_id: string;
+          member_id: string;
+          date: string;
+          available: boolean;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          member_id: string;
+          date: string;
+          available: boolean;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          member_id?: string;
+          date?: string;
+          available?: boolean;
+        };
+      };
+    };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
