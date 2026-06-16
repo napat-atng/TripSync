@@ -6,6 +6,7 @@ export type Trip = {
   startsAt: string | null;
   endsAt: string | null;
   invite_token: string;
+  confirmed_date: string | null;
   created_at: string;
   trip_members?: { id: string; user_id: string; role: "leader" | "member" }[];
 };

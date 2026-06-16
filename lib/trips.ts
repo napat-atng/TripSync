@@ -63,6 +63,21 @@ export async function getUserTrips(userId: string) {
   return data as unknown as Trip[];
 }
 
+export async function setConfirmedDate(tripId: string, date: string) {
+  const { data, error } = await (supabase as any)
+    .from("trips")
+    .update({ confirmed_date: date })
+    .eq("id", tripId)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as Trip;
+}
+
 export async function getTripByInviteToken(token: string) {
   const { data, error } = await (supabase as any)
     .from("trips")

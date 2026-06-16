@@ -1,173 +1,278 @@
 import { supabase } from "./supabase";
-import type { AddExpenseInput, DebtRecord, Expense, ExpenseSplit } from "../types/expense";
+import type {
+  Expense,
+  ExpenseSplit,
+  ExpenseWithSplits,
+  MemberBalance,
+  SimplifiedDebt,
+} from "../types/expense";
 
-// ─── Add expense + splits ────────────────────────────────────────────────────
+export interface AddExpenseInput {
+  title: string;
+  amount: number;
+  currency?: string;
+  paidBy: string; // member_id
+  expenseDate: string; // ISO date string
+  splitMemberIds: string[]; // member_ids included in the split
+}
 
-export async function addExpense(tripId: string, input: AddExpenseInput): Promise<Expense> {
-  const { title, amount, paid_by, expense_date, split_member_ids } = input;
+// ----------------------------------------------------------------
+// Add expense + create splits in one operation
+// ----------------------------------------------------------------
+export async function addExpense(tripId: string, data: AddExpenseInput): Promise<Expense> {
+  const { title, amount, currency = "THB", paidBy, expenseDate, splitMemberIds } = data;
 
-  if (split_member_ids.length === 0) throw new Error("At least one member must be in the split.");
-
-  const share = Math.round((amount / split_member_ids.length) * 100) / 100;
+  if (splitMemberIds.length === 0) {
+    throw new Error("Select at least one member to split the expense with.");
+  }
 
   // 1. Insert expense
-  const { data: expense, error: expErr } = await (supabase as any)
+  const { data: expense, error: expenseError } = await (supabase as any)
     .from("expenses")
-    .insert({ trip_id: tripId, paid_by, title, amount, currency: "THB", expense_date })
+    .insert([
+      {
+        trip_id: tripId,
+        paid_by: paidBy,
+        title,
+        amount,
+        currency,
+        expense_date: expenseDate,
+      },
+    ])
     .select()
     .single();
-  if (expErr) throw expErr;
 
-  // 2. Insert splits — payer's own split is included but flagged via settled=false like others
-  //    (payer doesn't owe themselves — we handle this in settlement calculation, not at insert time)
-  const splits = split_member_ids.map((member_id) => ({
+  if (expenseError) throw expenseError;
+
+  // 2. Calculate share amount (rounded to 2 decimals; remainder goes to first split)
+  const shareRaw = amount / splitMemberIds.length;
+  const shareRounded = Math.round(shareRaw * 100) / 100;
+  const totalRounded = shareRounded * splitMemberIds.length;
+  const remainder = Math.round((amount - totalRounded) * 100) / 100;
+
+  const splitsPayload = splitMemberIds.map((memberId, index) => ({
     expense_id: expense.id,
-    member_id,
-    share_amount: share,
-    settled: member_id === paid_by, // payer's share is pre-settled
+    member_id: memberId,
+    // give any rounding remainder to the first member in the list
+    share_amount: index === 0 ? shareRounded + remainder : shareRounded,
+    // if the payer is part of the split, mark their own share as already settled
+    // (they don't owe themselves)
+    settled: memberId === paidBy,
   }));
 
-  const { error: splitErr } = await (supabase as any).from("expense_splits").insert(splits);
-  if (splitErr) throw splitErr;
+  const { error: splitsError } = await (supabase as any)
+    .from("expense_splits")
+    .insert(splitsPayload);
+
+  if (splitsError) throw splitsError;
 
   return expense as Expense;
 }
 
-// ─── Get all expenses for a trip (with payer name + splits) ─────────────────
-
-export async function getExpensesByTrip(tripId: string): Promise<Expense[]> {
-  const { data, error } = await (supabase as any)
+// ----------------------------------------------------------------
+// Fetch all expenses for a trip, with splits + member names
+// ----------------------------------------------------------------
+export async function getExpensesByTrip(tripId: string): Promise<ExpenseWithSplits[]> {
+  const { data: expenses, error } = await (supabase as any)
     .from("expenses")
-    .select(`
+    .select(
+      `
       *,
       payer:trip_members!expenses_paid_by_fkey(display_name),
-      splits:expense_splits(
-        id, member_id, share_amount, settled,
-        member:trip_members!expense_splits_member_id_fkey(display_name)
+      expense_splits(
+        *,
+        trip_members(display_name)
       )
-    `)
+    `,
+    )
     .eq("trip_id", tripId)
     .order("expense_date", { ascending: false });
 
   if (error) throw error;
 
-  return (data ?? []).map((row: any) => ({
-    ...row,
-    payer_name: row.payer?.display_name ?? null,
-    splits: (row.splits ?? []).map((s: any) => ({
+  return (expenses ?? []).map((e: any) => ({
+    id: e.id,
+    trip_id: e.trip_id,
+    paid_by: e.paid_by,
+    title: e.title,
+    amount: e.amount,
+    currency: e.currency,
+    expense_date: e.expense_date,
+    paid_by_name: e.payer?.display_name ?? null,
+    splits: (e.expense_splits ?? []).map((s: any) => ({
       id: s.id,
-      expense_id: row.id,
+      expense_id: s.expense_id,
       member_id: s.member_id,
       share_amount: s.share_amount,
       settled: s.settled,
-      member_name: s.member?.display_name ?? null,
-    })) as ExpenseSplit[],
-  })) as Expense[];
+      display_name: s.trip_members?.display_name ?? null,
+    })),
+  })) as ExpenseWithSplits[];
 }
 
-// ─── Settlement summary ──────────────────────────────────────────────────────
-
-export async function getSettlementSummary(tripId: string): Promise<DebtRecord[]> {
-  // Fetch all unsettled splits with payer info
-  const { data, error } = await (supabase as any)
-    .from("expense_splits")
-    .select(`
-      id,
-      member_id,
-      share_amount,
-      settled,
-      debtor:trip_members!expense_splits_member_id_fkey(display_name),
-      expense:expenses!expense_splits_expense_id_fkey(
-        paid_by,
-        payer:trip_members!expenses_paid_by_fkey(display_name)
+export async function getExpenseById(expenseId: string): Promise<ExpenseWithSplits | null> {
+  const { data: e, error } = await (supabase as any)
+    .from("expenses")
+    .select(
+      `
+      *,
+      payer:trip_members!expenses_paid_by_fkey(display_name),
+      expense_splits(
+        *,
+        trip_members(display_name)
       )
-    `)
-    .eq("settled", false)
-    .eq("expenses.trip_id", tripId);
+    `,
+    )
+    .eq("id", expenseId)
+    .single();
 
   if (error) throw error;
+  if (!e) return null;
 
-  // Net balance map: member_id → amount (positive = owed to them, negative = they owe)
-  const balances = new Map<string, { name: string | null; net: number }>();
-  // Track split_ids per (debtor → creditor) pair for bulk settle
-  const pairSplits = new Map<string, { amount: number; split_ids: string[]; from_name: string | null; to_name: string | null }>();
-
-  for (const row of data ?? []) {
-    const debtorId = row.member_id as string;
-    const creditorId = row.expense?.paid_by as string;
-    if (!creditorId || debtorId === creditorId) continue; // payer's own split already settled
-
-    const share = Number(row.share_amount);
-    const debtorName: string | null = row.debtor?.display_name ?? null;
-    const creditorName: string | null = row.expense?.payer?.display_name ?? null;
-
-    // Update net balance
-    if (!balances.has(debtorId)) balances.set(debtorId, { name: debtorName, net: 0 });
-    if (!balances.has(creditorId)) balances.set(creditorId, { name: creditorName, net: 0 });
-    balances.get(debtorId)!.net -= share;
-    balances.get(creditorId)!.net += share;
-
-    // Track per-pair
-    const pairKey = `${debtorId}→${creditorId}`;
-    if (!pairSplits.has(pairKey)) {
-      pairSplits.set(pairKey, { amount: 0, split_ids: [], from_name: debtorName, to_name: creditorName });
-    }
-    const pair = pairSplits.get(pairKey)!;
-    pair.amount += share;
-    pair.split_ids.push(row.id as string);
-  }
-
-  // Simplify: cancel out A→B and B→A debts
-  const debts: DebtRecord[] = [];
-  const processed = new Set<string>();
-
-  for (const [key, val] of pairSplits.entries()) {
-    if (processed.has(key)) continue;
-    const [fromId, toId] = key.split("→");
-    const reverseKey = `${toId}→${fromId}`;
-    const reverse = pairSplits.get(reverseKey);
-
-    const net = val.amount - (reverse?.amount ?? 0);
-    if (Math.abs(net) < 0.01) {
-      processed.add(key);
-      processed.add(reverseKey);
-      continue;
-    }
-
-    if (net > 0) {
-      debts.push({
-        from_member_id: fromId,
-        from_name: val.from_name,
-        to_member_id: toId,
-        to_name: val.to_name,
-        amount: Math.round(net * 100) / 100,
-        split_ids: val.split_ids,
-      });
-    } else {
-      debts.push({
-        from_member_id: toId,
-        from_name: val.to_name,
-        to_member_id: fromId,
-        to_name: val.from_name,
-        amount: Math.round(Math.abs(net) * 100) / 100,
-        split_ids: reverse?.split_ids ?? [],
-      });
-    }
-
-    processed.add(key);
-    processed.add(reverseKey);
-  }
-
-  return debts.sort((a, b) => b.amount - a.amount);
+  return {
+    id: e.id,
+    trip_id: e.trip_id,
+    paid_by: e.paid_by,
+    title: e.title,
+    amount: e.amount,
+    currency: e.currency,
+    expense_date: e.expense_date,
+    paid_by_name: e.payer?.display_name ?? null,
+    splits: (e.expense_splits ?? []).map((s: any) => ({
+      id: s.id,
+      expense_id: s.expense_id,
+      member_id: s.member_id,
+      share_amount: s.share_amount,
+      settled: s.settled,
+      display_name: s.trip_members?.display_name ?? null,
+    })),
+  };
 }
 
-// ─── Mark a debt pair as settled ────────────────────────────────────────────
+export async function getTripTotalSpend(tripId: string): Promise<number> {
+  const { data, error } = await (supabase as any)
+    .from("expenses")
+    .select("amount")
+    .eq("trip_id", tripId);
 
-export async function markSplitsSettled(splitIds: string[]): Promise<void> {
+  if (error) throw error;
+  return (data ?? []).reduce((sum: number, row: any) => sum + Number(row.amount), 0);
+}
+
+// ----------------------------------------------------------------
+// Settlement: compute net balance per member, then simplify into
+// a minimal set of "A owes B" transactions.
+// ----------------------------------------------------------------
+export async function getSettlementSummary(tripId: string): Promise<{
+  balances: MemberBalance[];
+  debts: SimplifiedDebt[];
+}> {
+  const expenses = await getExpensesByTrip(tripId);
+
+  // member_id -> { display_name, paid, owed }
+  const balanceMap = new Map<string, MemberBalance>();
+
+  const ensure = (memberId: string, displayName: string | null) => {
+    if (!balanceMap.has(memberId)) {
+      balanceMap.set(memberId, {
+        member_id: memberId,
+        display_name: displayName,
+        paid: 0,
+        owed: 0,
+        net: 0,
+      });
+    }
+    return balanceMap.get(memberId)!;
+  };
+
+  // Track unsettled splits per (payer, ower) pair so we can reference split_ids later
+  const unsettledSplitsByPair = new Map<string, string[]>(); // key: `${ower}->${payer}`
+
+  for (const exp of expenses) {
+    const payerBalance = ensure(exp.paid_by, exp.paid_by_name);
+    payerBalance.paid += Number(exp.amount);
+
+    for (const split of exp.splits) {
+      const owerBalance = ensure(split.member_id, split.display_name);
+      owerBalance.owed += Number(split.share_amount);
+
+      // Only unsettled splits where the ower isn't the payer represent real debt
+      if (!split.settled && split.member_id !== exp.paid_by) {
+        const key = `${split.member_id}->${exp.paid_by}`;
+        if (!unsettledSplitsByPair.has(key)) unsettledSplitsByPair.set(key, []);
+        unsettledSplitsByPair.get(key)!.push(split.id);
+      }
+    }
+  }
+
+  for (const b of balanceMap.values()) {
+    b.net = Math.round((b.paid - b.owed) * 100) / 100;
+  }
+
+  // Simplify debts: greedily match biggest debtor with biggest creditor
+  const debts = simplifyDebts(Array.from(balanceMap.values()), unsettledSplitsByPair);
+
+  return {
+    balances: Array.from(balanceMap.values()).sort((a, b) => b.net - a.net),
+    debts,
+  };
+}
+
+function simplifyDebts(
+  balances: MemberBalance[],
+  unsettledSplitsByPair: Map<string, string[]>,
+): SimplifiedDebt[] {
+  // Work on a mutable copy: positive net = creditor, negative net = debtor
+  const creditors = balances
+    .filter((b) => b.net > 0.01)
+    .map((b) => ({ ...b }))
+    .sort((a, b) => b.net - a.net);
+  const debtors = balances
+    .filter((b) => b.net < -0.01)
+    .map((b) => ({ ...b, net: -b.net })) // store as positive amount owed
+    .sort((a, b) => b.net - a.net);
+
+  const debts: SimplifiedDebt[] = [];
+
+  let i = 0;
+  let j = 0;
+  while (i < debtors.length && j < creditors.length) {
+    const debtor = debtors[i];
+    const creditor = creditors[j];
+    const amount = Math.round(Math.min(debtor.net, creditor.net) * 100) / 100;
+
+    if (amount > 0.01) {
+      const key = `${debtor.member_id}->${creditor.member_id}`;
+      debts.push({
+        from_member_id: debtor.member_id,
+        from_name: debtor.display_name,
+        to_member_id: creditor.member_id,
+        to_name: creditor.display_name,
+        amount,
+        split_ids: unsettledSplitsByPair.get(key) ?? [],
+      });
+    }
+
+    debtor.net = Math.round((debtor.net - amount) * 100) / 100;
+    creditor.net = Math.round((creditor.net - amount) * 100) / 100;
+
+    if (debtor.net <= 0.01) i += 1;
+    if (creditor.net <= 0.01) j += 1;
+  }
+
+  return debts;
+}
+
+// ----------------------------------------------------------------
+// Mark a debt (set of expense_splits) as settled
+// ----------------------------------------------------------------
+export async function markDebtAsSettled(splitIds: string[]): Promise<void> {
   if (splitIds.length === 0) return;
+
   const { error } = await (supabase as any)
     .from("expense_splits")
     .update({ settled: true })
     .in("id", splitIds);
+
   if (error) throw error;
 }

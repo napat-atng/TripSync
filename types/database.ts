@@ -12,6 +12,7 @@ export type Database = {
           startsAt: string | null;
           endsAt: string | null;
           invite_token: string;
+          confirmed_date: string | null;
           created_at: string;
         };
         Insert: {
@@ -22,6 +23,7 @@ export type Database = {
           startsAt?: string | null;
           endsAt?: string | null;
           invite_token: string;
+          confirmed_date?: string | null;
           created_at?: string;
         };
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           startsAt?: string | null;
           endsAt?: string | null;
           invite_token?: string;
+          confirmed_date?: string | null;
           created_at?: string;
         };
       };
@@ -116,7 +119,6 @@ export type Database = {
           submitted_at?: string;
         };
       };
-    };
       availability: {
         Row: {
           id: string;
@@ -138,6 +140,110 @@ export type Database = {
           member_id?: string;
           date?: string;
           available?: boolean;
+        };
+      };
+      expenses: {
+        Row: {
+          id: string;
+          trip_id: string;
+          paid_by: string;
+          title: string;
+          amount: number;
+          currency: string;
+          expense_date: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          paid_by: string;
+          title: string;
+          amount: number;
+          currency?: string;
+          expense_date?: string;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          paid_by?: string;
+          title?: string;
+          amount?: number;
+          currency?: string;
+          expense_date?: string;
+        };
+      };
+      expense_splits: {
+        Row: {
+          id: string;
+          expense_id: string;
+          member_id: string;
+          share_amount: number;
+          settled: boolean;
+        };
+        Insert: {
+          id?: string;
+          expense_id: string;
+          member_id: string;
+          share_amount: number;
+          settled?: boolean;
+        };
+        Update: {
+          id?: string;
+          expense_id?: string;
+          member_id?: string;
+          share_amount?: number;
+          settled?: boolean;
+        };
+      };
+      votes: {
+        Row: {
+          id: string;
+          trip_id: string;
+          created_by: string;
+          title: string;
+          description: string | null;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          created_by: string;
+          title: string;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          created_by?: string;
+          title?: string;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+      };
+      vote_responses: {
+        Row: {
+          id: string;
+          vote_id: string;
+          member_id: string;
+          answer: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          vote_id: string;
+          member_id: string;
+          answer: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          vote_id?: string;
+          member_id?: string;
+          answer?: boolean;
+          created_at?: string;
         };
       };
     };

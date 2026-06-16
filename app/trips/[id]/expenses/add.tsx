@@ -1,108 +1,132 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
-  ScrollView,
   Pressable,
   TextInput,
+  ScrollView,
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { Controller, useForm } from "react-hook-form";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 
 import { AppText } from "../../../../components/AppText";
-import { useAuth } from "../../../../hooks/useAuth";
-import { getMembersByTrip, getMyMemberId } from "../../../../lib/members";
+import { getMembersByTrip } from "../../../../lib/members";
 import { addExpense } from "../../../../lib/expenses";
 import type { TripMember } from "../../../../types/trip";
 
+type FormValues = {
+  title: string;
+  amount: string;
+  paidBy: string;
+  expenseDate: string; // YYYY-MM-DD
+};
+
 function todayISO() {
-  return new Date().toISOString().split("T")[0];
+  return new Date().toISOString().slice(0, 10);
 }
 
 export default function AddExpenseScreen() {
   const { id: tripId } = useLocalSearchParams<{ id: string }>();
-  const user = useAuth((s) => s.user);
 
   const [members, setMembers] = useState<TripMember[]>([]);
-  const [myMemberId, setMyMemberId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(true);
+  const [selectedSplitIds, setSelectedSplitIds] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form state
-  const [title, setTitle] = useState("");
-  const [amountText, setAmountText] = useState("");
-  const [paidBy, setPaidBy] = useState<string>("");
-  const [date, setDate] = useState(todayISO());
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
+    defaultValues: {
+      title: "",
+      amount: "",
+      paidBy: "",
+      expenseDate: todayISO(),
+    },
+  });
 
-  const load = useCallback(async () => {
-    if (!tripId || !user) return;
+  const paidBy = watch("paidBy");
+
+  useEffect(() => {
+    loadMembers();
+  }, [tripId]);
+
+  const loadMembers = async () => {
     try {
-      const [mems, mid] = await Promise.all([
-        getMembersByTrip(tripId),
-        getMyMemberId(tripId, user.id),
-      ]);
-      setMembers(mems);
-      // Default payer = current user's member
-      const defaultPayer = mid ?? mems[0]?.id ?? "";
-      setPaidBy(defaultPayer);
-      // Default: all selected
-      setSelectedIds(new Set(mems.map((m) => m.id)));
-      setMyMemberId(mid ?? null);
-    } catch {
-      Alert.alert("Error", "Could not load members.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [tripId, user]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const toggleMember = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        if (next.size === 1) return prev; // must keep at least one
-        next.delete(id);
-      } else {
-        next.add(id);
+      const data = await getMembersByTrip(tripId!);
+      setMembers(data);
+      // default: everyone selected
+      setSelectedSplitIds(new Set(data.map((m) => m.id)));
+      if (data.length > 0) {
+        setValue("paidBy", data[0].id);
       }
+    } catch {
+      Alert.alert("Error", "Could not load trip members.");
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  };
+
+  const toggleSplitMember = (memberId: string) => {
+    setSelectedSplitIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(memberId)) next.delete(memberId);
+      else next.add(memberId);
       return next;
     });
   };
 
-  const sharePerPerson = () => {
-    const amount = parseFloat(amountText);
-    if (!amount || selectedIds.size === 0) return 0;
-    return Math.round((amount / selectedIds.size) * 100) / 100;
-  };
+  const onSubmit = async (values: FormValues) => {
+    const amountNum = parseFloat(values.amount);
 
-  const handleSubmit = async () => {
-    const amount = parseFloat(amountText);
-
-    if (!title.trim()) { Alert.alert("Error", "Please enter a title."); return; }
-    if (!amount || amount <= 0) { Alert.alert("Error", "Please enter a valid amount."); return; }
-    if (!paidBy) { Alert.alert("Error", "Please select who paid."); return; }
-    if (selectedIds.size === 0) { Alert.alert("Error", "Select at least one person to split with."); return; }
+    if (!values.title.trim()) {
+      Alert.alert("Missing title", "Please enter a title for this expense.");
+      return;
+    }
+    if (!amountNum || amountNum <= 0) {
+      Alert.alert("Invalid amount", "Please enter a valid amount greater than 0.");
+      return;
+    }
+    if (!values.paidBy) {
+      Alert.alert("Missing payer", "Please select who paid.");
+      return;
+    }
+    if (selectedSplitIds.size === 0) {
+      Alert.alert("No split selected", "Select at least one member to split this with.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       await addExpense(tripId!, {
-        title: title.trim(),
-        amount,
-        paid_by: paidBy,
-        expense_date: new Date(date).toISOString(),
-        split_member_ids: Array.from(selectedIds),
+        title: values.title.trim(),
+        amount: amountNum,
+        paidBy: values.paidBy,
+        expenseDate: values.expenseDate,
+        splitMemberIds: Array.from(selectedSplitIds),
       });
       router.back();
-    } catch (e: any) {
-      Alert.alert("Error", e?.message ?? "Could not save expense.");
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Could not save expense. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  const amountValue = parseFloat(watch("amount") || "0");
+  const perPersonShare =
+    selectedSplitIds.size > 0 && amountValue > 0
+      ? (amountValue / selectedSplitIds.size).toFixed(2)
+      : "0.00";
+
+  if (isLoadingMembers) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-50">
         <ActivityIndicator size="large" color="#0f766e" />
@@ -114,120 +138,130 @@ export default function AddExpenseScreen() {
     <View className="flex-1 bg-slate-50">
       <Stack.Screen options={{ title: "Add Expense" }} />
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 80 }}>
-
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         {/* Title */}
-        <AppText className="mb-1 text-sm font-semibold text-slate-700">Title</AppText>
-        <TextInput
-          className="mb-4 h-12 rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900"
-          placeholder="e.g. Dinner, Hotel, Transport"
-          value={title}
-          onChangeText={setTitle}
+        <AppText className="mb-1 text-sm font-medium text-slate-600">Title</AppText>
+        <Controller
+          control={control}
+          name="title"
+          render={({ field: { value, onChange } }) => (
+            <TextInput
+              className="mb-4 h-12 rounded-lg border border-slate-200 bg-white px-4 text-base text-slate-900"
+              placeholder="e.g. Dinner at the beach"
+              value={value}
+              onChangeText={onChange}
+            />
+          )}
         />
 
         {/* Amount */}
-        <AppText className="mb-1 text-sm font-semibold text-slate-700">Amount (THB)</AppText>
-        <TextInput
-          className="mb-4 h-12 rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900"
-          placeholder="0.00"
-          keyboardType="decimal-pad"
-          value={amountText}
-          onChangeText={setAmountText}
+        <AppText className="mb-1 text-sm font-medium text-slate-600">Amount (THB)</AppText>
+        <Controller
+          control={control}
+          name="amount"
+          render={({ field: { value, onChange } }) => (
+            <TextInput
+              className="mb-4 h-12 rounded-lg border border-slate-200 bg-white px-4 text-base text-slate-900"
+              placeholder="0.00"
+              keyboardType="decimal-pad"
+              value={value}
+              onChangeText={onChange}
+            />
+          )}
         />
 
         {/* Date */}
-        <AppText className="mb-1 text-sm font-semibold text-slate-700">Date</AppText>
-        <TextInput
-          className="mb-4 h-12 rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900"
-          placeholder="YYYY-MM-DD"
-          value={date}
-          onChangeText={setDate}
+        <AppText className="mb-1 text-sm font-medium text-slate-600">Date</AppText>
+        <Controller
+          control={control}
+          name="expenseDate"
+          render={({ field: { value, onChange } }) => (
+            <TextInput
+              className="mb-4 h-12 rounded-lg border border-slate-200 bg-white px-4 text-base text-slate-900"
+              placeholder="YYYY-MM-DD"
+              value={value}
+              onChangeText={onChange}
+            />
+          )}
         />
 
         {/* Paid by */}
-        <AppText className="mb-2 text-sm font-semibold text-slate-700">Paid by</AppText>
-        <View className="mb-4 flex-row flex-wrap gap-2">
-          {members.map((m) => (
-            <Pressable
-              key={m.id}
-              onPress={() => setPaidBy(m.id)}
-              className={`rounded-full border px-4 py-2 ${
-                paidBy === m.id
-                  ? "border-teal-600 bg-teal-600"
-                  : "border-slate-200 bg-white"
-              }`}
-            >
-              <AppText
-                className={`text-sm font-medium ${
-                  paidBy === m.id ? "text-white" : "text-slate-700"
-                }`}
-              >
-                {m.display_name ?? "Guest"}
-                {m.id === myMemberId ? " (me)" : ""}
-              </AppText>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Split between */}
-        <View className="mb-2 flex-row items-center justify-between">
-          <AppText className="text-sm font-semibold text-slate-700">Split between</AppText>
-          {selectedIds.size > 0 && parseFloat(amountText) > 0 && (
-            <View className="rounded-full bg-teal-50 px-3 py-1">
-              <AppText className="text-xs font-semibold text-teal-700">
-                ฿{sharePerPerson().toLocaleString()} / person
-              </AppText>
-            </View>
-          )}
-        </View>
-
-        <View className="mb-6 rounded-xl border border-slate-200 bg-white overflow-hidden">
-          {members.map((m, i) => {
-            const checked = selectedIds.has(m.id);
+        <AppText className="mb-2 text-sm font-medium text-slate-600">Paid by</AppText>
+        <View className="mb-5 flex-row flex-wrap gap-2">
+          {members.map((m) => {
+            const isSelected = paidBy === m.id;
             return (
               <Pressable
                 key={m.id}
-                onPress={() => toggleMember(m.id)}
-                className={`flex-row items-center px-4 py-3 ${
-                  i < members.length - 1 ? "border-b border-slate-100" : ""
+                onPress={() => setValue("paidBy", m.id)}
+                className={`rounded-full border px-4 py-2 ${
+                  isSelected ? "border-teal-600 bg-teal-600" : "border-slate-200 bg-white"
                 }`}
               >
-                {/* Checkbox */}
-                <View
-                  className={`mr-3 h-5 w-5 items-center justify-center rounded border ${
-                    checked ? "border-teal-600 bg-teal-600" : "border-slate-300 bg-white"
-                  }`}
+                <AppText
+                  className={`text-sm font-medium ${isSelected ? "text-white" : "text-slate-700"}`}
                 >
-                  {checked && <AppText className="text-xs text-white">✓</AppText>}
-                </View>
-                <AppText className="flex-1 text-sm text-slate-800">
-                  {m.display_name ?? "Guest"}
-                  {m.id === myMemberId ? " (me)" : ""}
+                  {m.display_name ?? "Unnamed"}
                 </AppText>
-                {m.id === paidBy && (
-                  <View className="rounded-full bg-slate-100 px-2 py-0.5">
-                    <AppText className="text-xs text-slate-500">payer</AppText>
-                  </View>
-                )}
               </Pressable>
             );
           })}
         </View>
-      </ScrollView>
 
-      {/* Submit */}
-      <View className="absolute bottom-0 left-0 right-0 border-t border-slate-200 bg-white px-4 py-4 pb-8">
+        {/* Split between */}
+        <View className="mb-2 flex-row items-center justify-between">
+          <AppText className="text-sm font-medium text-slate-600">Split between</AppText>
+          <AppText className="text-xs text-slate-400">
+            {selectedSplitIds.size} of {members.length} selected
+          </AppText>
+        </View>
+
+        <View className="mb-5 rounded-xl border border-slate-200 bg-white">
+          {members.map((m, idx) => {
+            const checked = selectedSplitIds.has(m.id);
+            return (
+              <Pressable
+                key={m.id}
+                onPress={() => toggleSplitMember(m.id)}
+                className={`flex-row items-center justify-between px-4 py-3 ${
+                  idx !== members.length - 1 ? "border-b border-slate-100" : ""
+                }`}
+              >
+                <AppText className="text-sm text-slate-800">{m.display_name ?? "Unnamed"}</AppText>
+                <View
+                  className={`h-5 w-5 items-center justify-center rounded-md border ${
+                    checked ? "border-teal-600 bg-teal-600" : "border-slate-300 bg-white"
+                  }`}
+                >
+                  {checked && <AppText className="text-xs font-bold text-white">✓</AppText>}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Per-person preview */}
+        {selectedSplitIds.size > 0 && (
+          <View className="mb-6 rounded-lg bg-teal-50 p-4">
+            <AppText className="text-sm text-teal-800">
+              Each person pays{" "}
+              <AppText className="font-semibold text-teal-900">฿{perPersonShare}</AppText>
+            </AppText>
+          </View>
+        )}
+
         <Pressable
-          onPress={handleSubmit}
+          className="h-12 items-center justify-center rounded-lg bg-teal-600"
+          onPress={handleSubmit(onSubmit)}
           disabled={isSubmitting}
-          className="h-12 items-center justify-center rounded-xl bg-teal-600"
         >
-          {isSubmitting
-            ? <ActivityIndicator color="#fff" />
-            : <AppText className="text-base font-semibold text-white">Save Expense</AppText>
-          }
+          {isSubmitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <AppText className="font-semibold text-white">Save Expense</AppText>
+          )}
         </Pressable>
-      </View>
+      </ScrollView>
     </View>
   );
 }

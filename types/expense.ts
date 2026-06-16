@@ -6,9 +6,6 @@ export interface Expense {
   amount: number;
   currency: string;
   expense_date: string;
-  // joined
-  payer_name?: string | null;
-  splits?: ExpenseSplit[];
 }
 
 export interface ExpenseSplit {
@@ -17,24 +14,27 @@ export interface ExpenseSplit {
   member_id: string;
   share_amount: number;
   settled: boolean;
-  // joined
-  member_name?: string | null;
 }
 
-export interface AddExpenseInput {
-  title: string;
-  amount: number;
-  paid_by: string;       // member_id of payer
-  expense_date: string;  // ISO date string
-  split_member_ids: string[];
+export interface ExpenseWithSplits extends Expense {
+  paid_by_name: string | null;
+  splits: (ExpenseSplit & { display_name: string | null })[];
 }
 
-export interface DebtRecord {
+export interface MemberBalance {
+  member_id: string;
+  display_name: string | null;
+  paid: number;
+  owed: number;
+  net: number; // positive = should receive, negative = should pay
+}
+
+export interface SimplifiedDebt {
   from_member_id: string;
   from_name: string | null;
   to_member_id: string;
   to_name: string | null;
   amount: number;
-  /** expense_split ids that make up this debt (for bulk settle) */
+  // underlying split ids that make up this debt, so "mark as settled" can update them
   split_ids: string[];
 }

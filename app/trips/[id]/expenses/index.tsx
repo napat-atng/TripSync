@@ -1,110 +1,48 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
-  FlatList,
   Pressable,
-  Modal,
-  ScrollView,
+  FlatList,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { Stack, router, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import { AppText } from "../../../../components/AppText";
-import { getExpensesByTrip } from "../../../../lib/expenses";
-import type { Expense } from "../../../../types/expense";
+import { getExpensesByTrip, getTripTotalSpend } from "../../../../lib/expenses";
+import type { ExpenseWithSplits } from "../../../../types/expense";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric", month: "short", year: "numeric",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
-function formatAmount(n: number) {
-  return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatMoney(n: number) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
-// ─── Detail Modal ────────────────────────────────────────────────────────────
-
-function ExpenseDetailModal({
-  expense,
-  onClose,
-}: {
-  expense: Expense;
-  onClose: () => void;
-}) {
-  return (
-    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
-      <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
-        <Pressable onPress={() => {}} className="rounded-t-2xl bg-white p-6 pb-10">
-          <View className="mb-1 flex-row items-center justify-between">
-            <AppText className="text-lg font-bold text-slate-900">{expense.title}</AppText>
-            <Pressable onPress={onClose}>
-              <AppText className="text-slate-400">Close</AppText>
-            </Pressable>
-          </View>
-
-          <AppText className="mb-4 text-sm text-slate-500">
-            Paid by {expense.payer_name ?? "Unknown"} · {formatDate(expense.expense_date)}
-          </AppText>
-
-          <View className="mb-4 rounded-xl bg-teal-50 p-4">
-            <AppText className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-              Total
-            </AppText>
-            <AppText className="text-2xl font-bold text-teal-800">
-              ฿{formatAmount(expense.amount)}
-            </AppText>
-          </View>
-
-          <AppText className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Split
-          </AppText>
-
-          {(expense.splits ?? []).map((split) => (
-            <View key={split.id} className="mb-2 flex-row items-center justify-between">
-              <View className="flex-row items-center gap-2">
-                <View className="h-7 w-7 items-center justify-center rounded-full bg-slate-100">
-                  <AppText className="text-xs font-bold text-slate-600">
-                    {(split.member_name ?? "?")[0].toUpperCase()}
-                  </AppText>
-                </View>
-                <AppText className="text-sm text-slate-700">
-                  {split.member_name ?? "Guest"}
-                </AppText>
-              </View>
-              <View className="flex-row items-center gap-2">
-                <AppText className="text-sm font-semibold text-slate-800">
-                  ฿{formatAmount(split.share_amount)}
-                </AppText>
-                {split.settled && (
-                  <View className="rounded-full bg-green-100 px-2 py-0.5">
-                    <AppText className="text-xs text-green-700">settled</AppText>
-                  </View>
-                )}
-              </View>
-            </View>
-          ))}
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
-// ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function ExpenseListScreen() {
   const { id: tripId } = useLocalSearchParams<{ id: string }>();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+
+  const [expenses, setExpenses] = useState<ExpenseWithSplits[]>([]);
+  const [totalSpend, setTotalSpend] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [selected, setSelected] = useState<Expense | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseWithSplits | null>(null);
 
   const load = useCallback(async () => {
     if (!tripId) return;
     setIsLoading(true);
     try {
-      const data = await getExpensesByTrip(tripId);
-      setExpenses(data);
+      const [exps, total] = await Promise.all([
+        getExpensesByTrip(tripId),
+        getTripTotalSpend(tripId),
+      ]);
+      setExpenses(exps);
+      setTotalSpend(total);
     } catch {
       Alert.alert("Error", "Could not load expenses.");
     } finally {
@@ -112,9 +50,12 @@ export default function ExpenseListScreen() {
     }
   }, [tripId]);
 
-  useEffect(() => { load(); }, [load]);
-
-  const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  // Reload every time the screen gains focus (e.g. after adding an expense)
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   if (isLoading) {
     return (
@@ -128,74 +69,138 @@ export default function ExpenseListScreen() {
     <View className="flex-1 bg-slate-50">
       <Stack.Screen options={{ title: "Expenses" }} />
 
+      {/* Total spend card */}
+      <View className="px-5 pt-5">
+        <View className="rounded-xl bg-teal-600 p-5">
+          <AppText className="text-sm text-teal-100">Total trip spend</AppText>
+          <AppText className="mt-1 text-3xl font-bold text-white">
+            ฿{formatMoney(totalSpend)}
+          </AppText>
+          <AppText className="mt-1 text-xs text-teal-100">
+            {expenses.length} expense{expenses.length !== 1 ? "s" : ""}
+          </AppText>
+        </View>
+
+        <View className="mt-4 flex-row gap-3">
+          <Pressable
+            className="flex-1 h-11 items-center justify-center rounded-lg bg-white border border-slate-200"
+            onPress={() => router.push(`/trips/${tripId}/expenses/add` as any)}
+          >
+            <AppText className="font-semibold text-slate-700">+ Add expense</AppText>
+          </Pressable>
+          <Pressable
+            className="flex-1 h-11 items-center justify-center rounded-lg bg-slate-900"
+            onPress={() => router.push(`/trips/${tripId}/expenses/settle` as any)}
+          >
+            <AppText className="font-semibold text-white">Settle up</AppText>
+          </Pressable>
+        </View>
+      </View>
+
       <FlatList
         data={expenses}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        ListHeaderComponent={
-          <View>
-            {/* Total card */}
-            <View className="mb-4 rounded-2xl bg-teal-600 p-5">
-              <AppText className="text-sm font-medium text-teal-100">Total trip spend</AppText>
-              <AppText className="mt-1 text-3xl font-bold text-white">
-                ฿{formatAmount(total)}
-              </AppText>
-              <AppText className="mt-1 text-xs text-teal-200">
-                {expenses.length} expense{expenses.length !== 1 ? "s" : ""}
-              </AppText>
-            </View>
-
-            {/* Settle button */}
-            <Pressable
-              className="mb-4 h-11 items-center justify-center rounded-xl border border-teal-600 bg-white"
-              onPress={() => router.push(`/trips/${tripId}/expenses/settle` as any)}
-            >
-              <AppText className="font-semibold text-teal-700">View Settlement Summary</AppText>
-            </Pressable>
-          </View>
-        }
+        contentContainerStyle={{ padding: 20, paddingBottom: 60 }}
         ListEmptyComponent={
-          <View className="mt-10 items-center">
-            <AppText className="text-base font-semibold text-slate-600">No expenses yet</AppText>
-            <AppText className="mt-1 text-sm text-slate-400">Tap + to add the first one</AppText>
+          <View className="mt-16 items-center">
+            <AppText className="text-center text-base font-semibold text-slate-700">
+              No expenses yet
+            </AppText>
+            <AppText className="mt-1 text-center text-sm text-slate-500">
+              Add your first expense to start tracking.
+            </AppText>
           </View>
         }
         renderItem={({ item }) => (
           <Pressable
-            className="mb-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
-            onPress={() => setSelected(item)}
+            className="mb-3 rounded-xl border border-slate-200 bg-white p-4"
+            onPress={() => setSelectedExpense(item)}
           >
-            <View className="flex-row items-start justify-between">
-              <View className="flex-1 mr-3">
-                <AppText className="text-base font-semibold text-slate-900" numberOfLines={1}>
-                  {item.title}
-                </AppText>
-                <AppText className="mt-0.5 text-xs text-slate-400">
-                  Paid by {item.payer_name ?? "Unknown"} · {formatDate(item.expense_date)}
-                </AppText>
-                <AppText className="mt-0.5 text-xs text-slate-400">
-                  Split {item.splits?.length ?? 0} ways
-                </AppText>
-              </View>
-              <AppText className="text-base font-bold text-slate-800">
-                ฿{formatAmount(Number(item.amount))}
+            <View className="flex-row items-center justify-between">
+              <AppText className="flex-1 text-base font-semibold text-slate-900" numberOfLines={1}>
+                {item.title}
+              </AppText>
+              <AppText className="text-base font-semibold text-slate-900">
+                ฿{formatMoney(item.amount)}
+              </AppText>
+            </View>
+            <View className="mt-2 flex-row items-center justify-between">
+              <AppText className="text-xs text-slate-500">
+                Paid by {item.paid_by_name ?? "Unknown"} · {formatDate(item.expense_date)}
+              </AppText>
+              <AppText className="text-xs text-slate-400">
+                Split {item.splits.length} way{item.splits.length !== 1 ? "s" : ""}
               </AppText>
             </View>
           </Pressable>
         )}
       />
 
-      {/* FAB */}
-      <Pressable
-        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-teal-600 shadow-lg"
-        onPress={() => router.push(`/trips/${tripId}/expenses/add` as any)}
+      {/* Detail modal */}
+      <Modal
+        visible={!!selectedExpense}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedExpense(null)}
       >
-        <AppText className="text-3xl text-white">+</AppText>
-      </Pressable>
+        <Pressable
+          className="flex-1 justify-end bg-black/40"
+          onPress={() => setSelectedExpense(null)}
+        >
+          <Pressable onPress={() => {}} className="rounded-t-2xl bg-white p-6 pb-10">
+            {selectedExpense && (
+              <>
+                <View className="mb-1 flex-row items-center justify-between">
+                  <AppText className="text-lg font-bold text-slate-900">
+                    {selectedExpense.title}
+                  </AppText>
+                  <Pressable onPress={() => setSelectedExpense(null)}>
+                    <AppText className="text-slate-500">Close</AppText>
+                  </Pressable>
+                </View>
+                <AppText className="mb-4 text-sm text-slate-500">
+                  ฿{formatMoney(selectedExpense.amount)} · paid by{" "}
+                  {selectedExpense.paid_by_name ?? "Unknown"} ·{" "}
+                  {formatDate(selectedExpense.expense_date)}
+                </AppText>
 
-      {selected && (
-        <ExpenseDetailModal expense={selected} onClose={() => setSelected(null)} />
-      )}
+                <AppText className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Who owes what
+                </AppText>
+
+                {selectedExpense.splits.map((s) => {
+                  const isPayer = s.member_id === selectedExpense.paid_by;
+                  return (
+                    <View
+                      key={s.id}
+                      className="mb-2 flex-row items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5"
+                    >
+                      <AppText className="text-sm text-slate-800">
+                        {s.display_name ?? "Unnamed"}
+                        {isPayer ? " (paid)" : ""}
+                      </AppText>
+                      <View className="flex-row items-center gap-2">
+                        <AppText className="text-sm font-semibold text-slate-900">
+                          ฿{formatMoney(s.share_amount)}
+                        </AppText>
+                        {s.settled ? (
+                          <View className="rounded-full bg-green-100 px-2 py-0.5">
+                            <AppText className="text-xs font-medium text-green-700">Settled</AppText>
+                          </View>
+                        ) : (
+                          <View className="rounded-full bg-amber-100 px-2 py-0.5">
+                            <AppText className="text-xs font-medium text-amber-700">Pending</AppText>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
