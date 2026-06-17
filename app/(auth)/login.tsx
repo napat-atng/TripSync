@@ -28,8 +28,8 @@ export default function LoginScreen() {
       }
     } catch (error) {
       Alert.alert(
-        "Google login failed",
-        error instanceof Error ? error.message : "Please try again.",
+        "เข้าสู่ระบบด้วย Google ไม่สำเร็จ",
+        error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง",
       );
     } finally {
       setIsSubmitting(false);
@@ -47,7 +47,7 @@ export default function LoginScreen() {
           TripSync
         </AppText>
         <AppText className="mt-2 text-center text-base leading-6 text-slate-500">
-          Plan group trips together.{"\n"}Keep everyone in sync.
+          วางแผนทริปกลุ่มง่ายๆ{"\n"}ทุกคนรู้ทุกอย่างพร้อมกัน
         </AppText>
       </View>
 
@@ -68,7 +68,7 @@ export default function LoginScreen() {
               <>
                 <AppText className="mr-3 text-lg">G</AppText>
                 <AppText className="text-base font-semibold text-slate-800">
-                  Continue with Google
+                  เข้าสู่ระบบด้วย Google
                 </AppText>
               </>
             )}
@@ -77,8 +77,7 @@ export default function LoginScreen() {
 
           {/* Terms / footer */}
           <AppText className="mt-6 text-center text-xs leading-5 text-slate-400">
-            By continuing, you agree to TripSync's{"\n"}Terms of Service and
-            Privacy Policy.
+            การเข้าสู่ระบบถือว่าคุณยอมรับ{"\n"}ข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัวของ TripSync
           </AppText>
         </View>
       </View>

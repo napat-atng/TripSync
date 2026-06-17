@@ -44,7 +44,7 @@ export default function ExpenseListScreen() {
       setExpenses(exps);
       setTotalSpend(total);
     } catch {
-      Alert.alert("Error", "Could not load expenses.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดค่าใช้จ่ายได้");
     } finally {
       setIsLoading(false);
     }
@@ -67,17 +67,17 @@ export default function ExpenseListScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "Expenses" }} />
+      <Stack.Screen options={{ title: "ค่าใช้จ่าย" }} />
 
       {/* Total spend card */}
       <View className="px-5 pt-5">
         <View className="rounded-xl bg-teal-600 p-5">
-          <AppText className="text-sm text-teal-100">Total trip spend</AppText>
+          <AppText className="text-sm text-teal-100">ค่าใช้จ่ายรวมของทริป</AppText>
           <AppText className="mt-1 text-3xl font-bold text-white">
             ฿{formatMoney(totalSpend)}
           </AppText>
           <AppText className="mt-1 text-xs text-teal-100">
-            {expenses.length} expense{expenses.length !== 1 ? "s" : ""}
+            {expenses.length} รายการ
           </AppText>
         </View>
 
@@ -86,13 +86,13 @@ export default function ExpenseListScreen() {
             className="flex-1 h-11 items-center justify-center rounded-lg bg-white border border-slate-200"
             onPress={() => router.push(`/trips/${tripId}/expenses/add` as any)}
           >
-            <AppText className="font-semibold text-slate-700">+ Add expense</AppText>
+            <AppText className="font-semibold text-slate-700">+ เพิ่มค่าใช้จ่าย</AppText>
           </Pressable>
           <Pressable
             className="flex-1 h-11 items-center justify-center rounded-lg bg-slate-900"
             onPress={() => router.push(`/trips/${tripId}/expenses/settle` as any)}
           >
-            <AppText className="font-semibold text-white">Settle up</AppText>
+            <AppText className="font-semibold text-white">เคลียร์หนี้</AppText>
           </Pressable>
         </View>
       </View>
@@ -104,10 +104,10 @@ export default function ExpenseListScreen() {
         ListEmptyComponent={
           <View className="mt-16 items-center">
             <AppText className="text-center text-base font-semibold text-slate-700">
-              No expenses yet
+              ยังไม่มีค่าใช้จ่าย
             </AppText>
             <AppText className="mt-1 text-center text-sm text-slate-500">
-              Add your first expense to start tracking.
+              เพิ่มค่าใช้จ่ายแรกของคุณเพื่อเริ่มติดตาม
             </AppText>
           </View>
         }
@@ -126,10 +126,10 @@ export default function ExpenseListScreen() {
             </View>
             <View className="mt-2 flex-row items-center justify-between">
               <AppText className="text-xs text-slate-500">
-                Paid by {item.paid_by_name ?? "Unknown"} · {formatDate(item.expense_date)}
+                จ่ายโดย {item.paid_by_name ?? "ไม่ระบุ"} · {formatDate(item.expense_date)}
               </AppText>
               <AppText className="text-xs text-slate-400">
-                Split {item.splits.length} way{item.splits.length !== 1 ? "s" : ""}
+                หาร {item.splits.length} คน
               </AppText>
             </View>
           </Pressable>
@@ -155,17 +155,17 @@ export default function ExpenseListScreen() {
                     {selectedExpense.title}
                   </AppText>
                   <Pressable onPress={() => setSelectedExpense(null)}>
-                    <AppText className="text-slate-500">Close</AppText>
+                    <AppText className="text-slate-500">ปิด</AppText>
                   </Pressable>
                 </View>
                 <AppText className="mb-4 text-sm text-slate-500">
-                  ฿{formatMoney(selectedExpense.amount)} · paid by{" "}
-                  {selectedExpense.paid_by_name ?? "Unknown"} ·{" "}
+                  ฿{formatMoney(selectedExpense.amount)} · จ่ายโดย{" "}
+                  {selectedExpense.paid_by_name ?? "ไม่ระบุ"} ·{" "}
                   {formatDate(selectedExpense.expense_date)}
                 </AppText>
 
                 <AppText className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Who owes what
+                  ใครค้างจ่ายเท่าไหร่
                 </AppText>
 
                 {selectedExpense.splits.map((s) => {
@@ -176,8 +176,8 @@ export default function ExpenseListScreen() {
                       className="mb-2 flex-row items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5"
                     >
                       <AppText className="text-sm text-slate-800">
-                        {s.display_name ?? "Unnamed"}
-                        {isPayer ? " (paid)" : ""}
+                        {s.display_name ?? "ไม่ระบุ"}
+                        {isPayer ? " (คนจ่าย)" : ""}
                       </AppText>
                       <View className="flex-row items-center gap-2">
                         <AppText className="text-sm font-semibold text-slate-900">
@@ -185,11 +185,11 @@ export default function ExpenseListScreen() {
                         </AppText>
                         {s.settled ? (
                           <View className="rounded-full bg-green-100 px-2 py-0.5">
-                            <AppText className="text-xs font-medium text-green-700">Settled</AppText>
+                            <AppText className="text-xs font-medium text-green-700">เคลียร์แล้ว</AppText>
                           </View>
                         ) : (
                           <View className="rounded-full bg-amber-100 px-2 py-0.5">
-                            <AppText className="text-xs font-medium text-amber-700">Pending</AppText>
+                            <AppText className="text-xs font-medium text-amber-700">รอจ่าย</AppText>
                           </View>
                         )}
                       </View>

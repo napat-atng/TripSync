@@ -37,7 +37,7 @@ export default function JoinTripScreen() {
         setIsLoading(false);
       }
     } catch (error) {
-      Alert.alert("Invalid Link", "This invite link is invalid or has expired.");
+      Alert.alert("ลิงก์ไม่ถูกต้อง", "ลิงก์เชิญชวนนี้ไม่ถูกต้องหรือหมดอายุการใช้งานแล้ว");
       router.replace("/(tabs)/home");
     }
   };
@@ -48,14 +48,14 @@ export default function JoinTripScreen() {
       await joinTripAsUser(targetTrip.id, user!.id, defaultName);
       router.replace(`/trips/${targetTrip.id}/dashboard` as any);
     } catch (error) {
-      Alert.alert("Failed to join", "Could not join the trip.");
+      Alert.alert("เข้าร่วมไม่สำเร็จ", "ไม่สามารถเข้าร่วมทริปนี้ได้ในขณะนี้");
       setIsLoading(false);
     }
   };
 
   const handleJoinAsGuest = async () => {
     if (!displayName.trim()) {
-      Alert.alert("Required", "Please enter your name to join.");
+      Alert.alert("จำเป็นต้องระบุชื่อ", "กรุณากรอกชื่อของคุณเพื่อเข้าร่วม");
       return;
     }
     if (!trip) return;
@@ -72,7 +72,7 @@ export default function JoinTripScreen() {
 
       router.replace(`/trips/${trip.id}/dashboard` as any);
     } catch (error) {
-      Alert.alert("Failed to join", "Could not join the trip as guest.");
+      Alert.alert("เข้าร่วมไม่สำเร็จ", "ไม่สามารถเข้าร่วมทริปในฐานะผู้เยี่ยมได้");
     } finally {
       setIsJoining(false);
     }
@@ -82,7 +82,7 @@ export default function JoinTripScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-slate-50">
         <ActivityIndicator size="large" color="#0f766e" />
-        <AppText className="mt-4 text-slate-500">Preparing your invite...</AppText>
+        <AppText className="mt-4 text-slate-500">กำลังเตรียมลิงก์เชิญชวน...</AppText>
       </View>
     );
   }
@@ -91,18 +91,18 @@ export default function JoinTripScreen() {
     <View className="flex-1 justify-center bg-slate-50 px-6">
       <View className="w-full max-w-sm self-center rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <AppText className="mb-2 text-center text-xl font-bold text-slate-900">
-          You've been invited!
+          คุณได้รับการเชิญชวน!
         </AppText>
         <AppText className="mb-6 text-center text-base text-slate-600">
-          Join <AppText className="font-semibold text-slate-900">{trip?.name}</AppText>
+          เข้าร่วมทริป <AppText className="font-semibold text-slate-900">{trip?.name}</AppText>
         </AppText>
 
         <AppText className="mb-2 text-sm font-semibold text-slate-700">
-          Enter your name to join as a guest:
+          กรอกชื่อของคุณเพื่อเข้าร่วมในฐานะผู้เยี่ยม:
         </AppText>
         <TextInput
           className="mb-6 h-12 rounded-lg border border-slate-300 bg-white px-4 text-base"
-          placeholder="e.g. Alex"
+          placeholder="เช่น สมชาย"
           value={displayName}
           onChangeText={setDisplayName}
           editable={!isJoining}
@@ -116,12 +116,12 @@ export default function JoinTripScreen() {
           {isJoining ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <AppText className="font-semibold text-white">Join Trip</AppText>
+            <AppText className="font-semibold text-white">เข้าร่วมทริป</AppText>
           )}
         </Pressable>
 
         <AppText className="mt-4 text-center text-xs text-slate-500">
-          Already have an account? Go back and login first to sync your trips.
+          มีบัญชีอยู่แล้ว? กลับไปล็อกอินก่อนเพื่อซิงค์ข้อมูลทริป
         </AppText>
       </View>
     </View>

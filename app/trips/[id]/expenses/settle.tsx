@@ -26,7 +26,7 @@ export default function SettleUpScreen() {
       setBalances(summary.balances);
       setDebts(summary.debts);
     } catch {
-      Alert.alert("Error", "Could not load settlement summary.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดสรุปยอดหนี้ได้");
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +45,7 @@ export default function SettleUpScreen() {
       await markDebtAsSettled(debt.split_ids);
       await load();
     } catch {
-      Alert.alert("Error", "Could not mark as settled. Please try again.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถเคลียร์หนี้ได้ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setSettlingKey(null);
     }
@@ -61,18 +61,18 @@ export default function SettleUpScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "Settle Up" }} />
+      <Stack.Screen options={{ title: "เคลียร์หนี้" }} />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         {/* Outstanding debts */}
         <AppText className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Outstanding balances
+          ยอดค้างชำระ
         </AppText>
 
         {debts.length === 0 ? (
           <View className="mb-6 items-center rounded-xl border border-slate-200 bg-white p-8">
-            <AppText className="text-base font-semibold text-slate-700">All settled up! 🎉</AppText>
-            <AppText className="mt-1 text-sm text-slate-500">No outstanding debts.</AppText>
+            <AppText className="text-base font-semibold text-slate-700">เคลียร์หนี้หมดแล้ว! 🎉</AppText>
+            <AppText className="mt-1 text-sm text-slate-500">ไม่มียอดค้างชำระ</AppText>
           </View>
         ) : (
           <View className="mb-6">
@@ -88,11 +88,11 @@ export default function SettleUpScreen() {
                     <View className="flex-1">
                       <AppText className="text-sm text-slate-800">
                         <AppText className="font-semibold text-slate-900">
-                          {debt.from_name ?? "Unnamed"}
+                          {debt.from_name ?? "ไม่ระบุ"}
                         </AppText>{" "}
-                        owes{" "}
+                        ค้างจ่าย{" "}
                         <AppText className="font-semibold text-slate-900">
-                          {debt.to_name ?? "Unnamed"}
+                          {debt.to_name ?? "ไม่ระบุ"}
                         </AppText>
                       </AppText>
                       <AppText className="mt-1 text-lg font-bold text-amber-600">
@@ -107,7 +107,7 @@ export default function SettleUpScreen() {
                       {isSettling ? (
                         <ActivityIndicator size="small" color="#fff" />
                       ) : (
-                        <AppText className="text-sm font-semibold text-white">Mark settled</AppText>
+                        <AppText className="text-sm font-semibold text-white">เคลียร์หนี้</AppText>
                       )}
                     </Pressable>
                   </View>
@@ -119,7 +119,7 @@ export default function SettleUpScreen() {
 
         {/* Per-member balance breakdown */}
         <AppText className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Balance breakdown
+          รายละเอียดเงิน
         </AppText>
 
         <View className="rounded-xl border border-slate-200 bg-white">
@@ -135,10 +135,10 @@ export default function SettleUpScreen() {
               >
                 <View>
                   <AppText className="text-sm font-medium text-slate-800">
-                    {b.display_name ?? "Unnamed"}
+                    {b.display_name ?? "ไม่ระบุ"}
                   </AppText>
                   <AppText className="text-xs text-slate-400">
-                    Paid ฿{formatMoney(b.paid)} · Owed ฿{formatMoney(b.owed)}
+                    จ่ายไป ฿{formatMoney(b.paid)} · ค้างจ่าย ฿{formatMoney(b.owed)}
                   </AppText>
                 </View>
                 <AppText
@@ -155,7 +155,7 @@ export default function SettleUpScreen() {
         </View>
 
         <AppText className="mt-4 text-center text-xs text-slate-400">
-          Positive balance means the group owes that person money.
+          ยอดเป็นบวกหมายความว่ากลุ่มค้างจ่ายเงินให้คนนั้น
         </AppText>
       </ScrollView>
     </View>

@@ -36,7 +36,7 @@ export default function SurveyRespondScreen() {
         setExistingResponses(resps || []);
       }
     } catch (error) {
-      Alert.alert("Error", "Could not load survey data.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลแบบสอบถามได้");
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +44,7 @@ export default function SurveyRespondScreen() {
 
   const onSubmit = async (data: Record<string, any>) => {
     if (!memberId) {
-      Alert.alert("Error", "You are not a member of this trip.");
+      Alert.alert("ข้อผิดพลาด", "คุณไม่ได้เป็นสมาชิกของทริปนี้");
       return;
     }
 
@@ -56,10 +56,10 @@ export default function SurveyRespondScreen() {
       }));
 
       await submitResponses(memberId, tripId!, responsesToSubmit);
-      Alert.alert("Success", "Thanks for your response!");
+      Alert.alert("ส่งคำตอบเรียบร้อย", "ขอบคุณที่ตอบคำถาม!");
       router.back();
     } catch (error) {
-      Alert.alert("Error", "Failed to submit survey.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถส่งคำตอบได้");
     }
   };
 
@@ -86,10 +86,10 @@ export default function SurveyRespondScreen() {
   if (existingResponses.length > 0) {
     return (
       <ScrollView className="flex-1 bg-slate-50 p-6">
-        <Stack.Screen options={{ title: "Your Responses" }} />
+        <Stack.Screen options={{ title: "คำตอบของคุณ" }} />
         <View className="mb-6 rounded-xl bg-teal-50 p-4 border border-teal-200">
           <AppText className="text-teal-800 font-semibold text-center">
-            You've already submitted this survey!
+            คุณส่งคำตอบแบบสอบถามแล้ว!
           </AppText>
         </View>
 
@@ -99,7 +99,7 @@ export default function SurveyRespondScreen() {
             <View key={q.id} className="mb-6 rounded-xl bg-white p-5 border border-slate-200 shadow-sm">
               <AppText className="mb-3 text-lg font-bold text-slate-900">{q.question}</AppText>
               <AppText className="text-base text-slate-700">
-                {resp ? JSON.stringify(resp.answer) : "No answer provided"}
+                {resp ? JSON.stringify(resp.answer) : "ยังไม่ได้ตอบคำถามนี้"}
               </AppText>
             </View>
           );
@@ -111,10 +111,10 @@ export default function SurveyRespondScreen() {
   // Edit Mode
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "Survey" }} />
+      <Stack.Screen options={{ title: "แบบสอบถาม" }} />
       <ScrollView className="flex-1 p-6" keyboardShouldPersistTaps="handled">
         <AppText className="mb-6 text-slate-500">
-          Please answer the following questions to help plan the trip.
+          กรุณาตอบคำถามต่อไปนี้ เพื่อช่วยวางแผนทริปกัน
         </AppText>
 
         {questions.map((q) => (
@@ -125,7 +125,7 @@ export default function SurveyRespondScreen() {
               control={control}
               name={q.id}
               defaultValue=""
-              rules={{ required: "This question is required" }}
+              rules={{ required: "กรุณาตอบคำถามนี้" }}
               render={({ field: { onChange, value }, fieldState: { error } }) => {
                 
                 // Text Response
@@ -134,7 +134,7 @@ export default function SurveyRespondScreen() {
                     <View>
                       <TextInput
                         className="h-12 rounded-lg border border-slate-300 px-4 text-base bg-slate-50"
-                        placeholder="Your answer"
+                        placeholder="คำตอบของคุณ"
                         value={value}
                         onChangeText={onChange}
                       />
@@ -202,7 +202,7 @@ export default function SurveyRespondScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <AppText className="text-lg font-semibold text-white">Submit Responses</AppText>
+            <AppText className="text-lg font-semibold text-white">ส่งคำตอบ</AppText>
           )}
         </Pressable>
       </View>

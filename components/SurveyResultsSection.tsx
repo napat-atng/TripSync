@@ -12,7 +12,7 @@ export function SurveyResultsSection({ results }: { results: QuestionResult[] })
   if (results.length === 0) {
     return (
       <AppText className="text-sm text-slate-500">
-        The trip leader hasn't created a survey yet.
+        หัวหน้าทริปยังไม่ได้สร้างแบบสอบถาม
       </AppText>
     );
   }
@@ -30,12 +30,12 @@ export function SurveyResultsSection({ results }: { results: QuestionResult[] })
           {r.type === "budget_range" && (
             <View>
               {r.values.length === 0 ? (
-                <AppText className="text-xs text-slate-400">No responses yet.</AppText>
+                <AppText className="text-xs text-slate-400">ยังไม่มีคำตอบ</AppText>
               ) : (
                 <View className="flex-row gap-4">
-                  <Stat label="Min" value={`฿${formatMoney(r.min ?? 0)}`} />
-                  <Stat label="Median" value={`฿${formatMoney(r.median ?? 0)}`} />
-                  <Stat label="Max" value={`฿${formatMoney(r.max ?? 0)}`} />
+                  <Stat label="ต่ำสุด" value={`฿${formatMoney(r.min ?? 0)}`} />
+                  <Stat label="ค่ากลาง" value={`฿${formatMoney(r.median ?? 0)}`} />
+                  <Stat label="สูงสุด" value={`฿${formatMoney(r.max ?? 0)}`} />
                 </View>
               )}
             </View>
@@ -44,7 +44,7 @@ export function SurveyResultsSection({ results }: { results: QuestionResult[] })
           {r.type === "text" && (
             <View>
               {r.answers.length === 0 ? (
-                <AppText className="text-xs text-slate-400">No responses yet.</AppText>
+                <AppText className="text-xs text-slate-400">ยังไม่มีคำตอบ</AppText>
               ) : (
                 r.answers.map((a, idx) => (
                   <View
@@ -52,7 +52,7 @@ export function SurveyResultsSection({ results }: { results: QuestionResult[] })
                     className="mb-2 rounded-lg bg-slate-50 px-3 py-2"
                   >
                     <AppText className="text-xs font-medium text-slate-500">
-                      {a.display_name ?? "Unnamed"}
+                      {a.display_name ?? "ผู้เยี่ยม"}
                     </AppText>
                     <AppText className="text-sm text-slate-800">{a.answer}</AppText>
                   </View>
@@ -72,7 +72,7 @@ export function SurveyResultsSection({ results }: { results: QuestionResult[] })
                     className="mb-2 flex-row items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
                   >
                     <AppText className="text-xs font-medium text-slate-500">
-                      {a.display_name ?? "Unnamed"}
+                      {a.display_name ?? "ผู้เยี่ยม"}
                     </AppText>
                     <AppText className="text-sm text-slate-800">
                       {a.start ?? "?"} → {a.end ?? "?"}

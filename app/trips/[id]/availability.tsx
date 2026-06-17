@@ -34,10 +34,10 @@ function toDateKey(year: number, month: number, day: number): string {
 }
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
 ];
-const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const DAY_LABELS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
 // --- component ---
 
@@ -62,7 +62,7 @@ export default function AvailabilityScreen() {
     try {
       const mid = await getMyMemberId(tripId, user.id);
       if (!mid) {
-        Alert.alert("Error", "You are not a member of this trip.");
+        Alert.alert("ข้อผิดพลาด", "คุณไม่ได้เป็นสมาชิกของทริปนี้");
         return;
       }
       setMemberId(mid);
@@ -72,7 +72,7 @@ export default function AvailabilityScreen() {
       rows.forEach((r) => map.set(r.date, r.available));
       setMarkedDates(map);
     } catch {
-      Alert.alert("Error", "Could not load your availability.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลวันว่างของคุณได้");
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +102,7 @@ export default function AvailabilityScreen() {
         else m.set(dateKey, current);
         return m;
       });
-      Alert.alert("Error", "Could not save. Please try again.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถบันทึกได้ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setSavingDate(null);
     }
@@ -133,17 +133,17 @@ export default function AvailabilityScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "My Availability" }} />
+      <Stack.Screen options={{ title: "วันว่างของฉัน" }} />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         {/* Summary chip */}
         <View className="mb-5 flex-row items-center gap-3">
           <View className="rounded-full bg-green-100 px-3 py-1">
             <AppText className="text-sm font-semibold text-green-800">
-              {availableCount} day{availableCount !== 1 ? "s" : ""} available
+              ว่าง {availableCount} วัน
             </AppText>
           </View>
-          <AppText className="text-xs text-slate-400">Tap a date to toggle</AppText>
+          <AppText className="text-xs text-slate-400">แตะที่วันที่เพื่อเลือก/ยกเลิก</AppText>
         </View>
 
         {/* Month navigation */}
@@ -225,16 +225,16 @@ export default function AvailabilityScreen() {
         <View className="mt-6 flex-row items-center justify-center gap-4">
           <View className="flex-row items-center gap-1.5">
             <View className="h-4 w-4 rounded bg-green-500" />
-            <AppText className="text-xs text-slate-500">Available</AppText>
+            <AppText className="text-xs text-slate-500">ว่าง</AppText>
           </View>
           <View className="flex-row items-center gap-1.5">
             <View className="h-4 w-4 rounded border border-slate-200 bg-white" />
-            <AppText className="text-xs text-slate-500">Not marked</AppText>
+            <AppText className="text-xs text-slate-500">ไม่ได้ระบุ</AppText>
           </View>
         </View>
 
         <AppText className="mt-4 text-center text-xs text-slate-400">
-          Changes are saved automatically
+          บันทึกการเปลี่ยนแปลงโดยอัตโนมัติ
         </AppText>
       </ScrollView>
     </View>

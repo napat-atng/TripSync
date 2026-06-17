@@ -54,7 +54,7 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
       setCreateModalVisible(false);
       await load();
     } catch {
-      Alert.alert("Error", "Could not create vote.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถสร้างโหวตได้");
     } finally {
       setIsSaving(false);
     }
@@ -67,7 +67,7 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
       await castVote(voteId, myMemberId, answer);
       await load();
     } catch {
-      Alert.alert("Error", "Could not submit your vote.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหวตได้");
     } finally {
       setVotingId(null);
     }
@@ -85,7 +85,7 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
     <View>
       {votes.length === 0 && (
         <AppText className="mb-3 text-sm text-slate-500">
-          No votes yet. {isLeader ? "Create one to get quick feedback from the group." : ""}
+          ยังไม่มีโหวต {isLeader ? "สร้างโหวตเพื่อรับความเห็นจากกลุ่ม" : ""}
         </AppText>
       )}
 
@@ -109,7 +109,7 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
               <AppText className="text-xs text-slate-500">
                 👍 {vote.yes_count}  ·  👎 {vote.no_count}
               </AppText>
-              <AppText className="text-xs text-slate-400">{total} vote{total !== 1 ? "s" : ""}</AppText>
+              <AppText className="text-xs text-slate-400">{total} โหวต</AppText>
             </View>
 
             {myMemberId && (
@@ -131,7 +131,7 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
                         vote.my_answer === true ? "text-white" : "text-slate-700"
                       }`}
                     >
-                      Yes
+                    ใช่
                     </AppText>
                   )}
                 </Pressable>
@@ -152,7 +152,7 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
                         vote.my_answer === false ? "text-white" : "text-slate-700"
                       }`}
                     >
-                      No
+                    ไม่
                     </AppText>
                   )}
                 </Pressable>
@@ -167,7 +167,7 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
           className="h-11 items-center justify-center rounded-lg border border-teal-600 bg-teal-50"
           onPress={() => setCreateModalVisible(true)}
         >
-          <AppText className="font-semibold text-teal-700">+ Create Yes/No Vote</AppText>
+          <AppText className="font-semibold text-teal-700">+ สร้างโหวตใช่/ไม่</AppText>
         </Pressable>
       )}
 
@@ -175,17 +175,17 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
         <View className="flex-1 justify-end bg-black/30">
           <View className="rounded-t-2xl bg-white p-6 pb-12">
             <View className="mb-4 flex-row items-center justify-between">
-              <AppText className="text-lg font-bold text-slate-900">New Vote</AppText>
+              <AppText className="text-lg font-bold text-slate-900">สร้างโหวตใหม่</AppText>
               <Pressable onPress={() => setCreateModalVisible(false)}>
-                <AppText className="text-slate-500">Close</AppText>
+                <AppText className="text-slate-500">ปิด</AppText>
               </Pressable>
             </View>
             <AppText className="mb-1 text-sm font-medium text-slate-600">
-              Proposed date or destination
+              สถานที่หรือวันเดินทางที่เสนอ
             </AppText>
             <TextInput
               className="mb-4 h-12 rounded-lg border border-slate-200 bg-white px-4 text-base text-slate-900"
-              placeholder="e.g. Chiang Mai, Dec 12-15?"
+              placeholder="เช่น เชียงใหม่ 12-15 ธันวาคม?"
               value={newTitle}
               onChangeText={setNewTitle}
             />
@@ -197,7 +197,7 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
               {isSaving ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <AppText className="font-semibold text-white">Create Vote</AppText>
+                <AppText className="font-semibold text-white">สร้างโหวต</AppText>
               )}
             </Pressable>
           </View>

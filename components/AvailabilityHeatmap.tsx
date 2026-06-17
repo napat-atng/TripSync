@@ -45,10 +45,10 @@ function toDateKey(year: number, month: number, day: number): string {
 }
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
 ];
-const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const DAY_LABELS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
 // --- sub-components ---
 
@@ -63,7 +63,7 @@ function DayDetailModal({ day, totalMembers, onClose }: DayDetailModalProps) {
 
   const notAvailable = totalMembers - day.count;
   const dateObj = new Date(day.date + "T00:00:00");
-  const label = dateObj.toLocaleDateString("en-GB", {
+  const label = dateObj.toLocaleDateString("th-TH", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -82,13 +82,13 @@ function DayDetailModal({ day, totalMembers, onClose }: DayDetailModalProps) {
           </View>
 
           <AppText className="mb-4 text-sm text-slate-500">
-            {day.count} of {totalMembers} available
+          {day.count} ใน {totalMembers} คนว่างงาน
           </AppText>
 
           {day.members.length > 0 && (
             <>
               <AppText className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Available
+                ว่างงาน
               </AppText>
               {day.members.map((m) => (
                 <View key={m.member_id} className="mb-2 flex-row items-center gap-2">
@@ -98,7 +98,7 @@ function DayDetailModal({ day, totalMembers, onClose }: DayDetailModalProps) {
                     </AppText>
                   </View>
                   <AppText className="text-sm text-slate-700">
-                    {m.display_name ?? "Guest"}
+                    {m.display_name ?? "ผู้เยี่ยม"}
                   </AppText>
                 </View>
               ))}
@@ -107,7 +107,7 @@ function DayDetailModal({ day, totalMembers, onClose }: DayDetailModalProps) {
 
           {notAvailable > 0 && (
             <AppText className="mt-3 text-xs text-slate-400">
-              {notAvailable} member{notAvailable > 1 ? "s" : ""} not available or haven't responded yet
+              {notAvailable} คนไม่ว่างหรือยังไม่ได้ระบุวัน
             </AppText>
           )}
         </Pressable>
@@ -147,7 +147,7 @@ export function AvailabilityHeatmap({ tripId, initialYear, initialMonth }: Avail
       setHeatmap(aggregateByDate(rows, members.length));
       setBestDates(best);
     } catch {
-      Alert.alert("Error", "Could not load availability data.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลวันว่างได้");
     } finally {
       setIsLoading(false);
     }
@@ -182,11 +182,11 @@ export function AvailabilityHeatmap({ tripId, initialYear, initialMonth }: Avail
       {bestDates.length > 0 && (
         <View className="mb-5 rounded-xl border border-green-200 bg-green-50 p-4">
           <AppText className="mb-3 text-sm font-semibold text-green-800">
-            🏆 Best dates
+            🏆 วันที่เหมาะที่สุด
           </AppText>
           {bestDates.map((d, i) => {
             const dateObj = new Date(d.date + "T00:00:00");
-            const label = dateObj.toLocaleDateString("en-GB", {
+            const label = dateObj.toLocaleDateString("th-TH", {
               weekday: "short", day: "numeric", month: "short",
             });
             return (
@@ -281,7 +281,7 @@ export function AvailabilityHeatmap({ tripId, initialYear, initialMonth }: Avail
         {["#bbf7d0", "#4ade80", "#16a34a", "#14532d"].map((c) => (
           <View key={c} className="h-4 w-6 rounded" style={{ backgroundColor: c }} />
         ))}
-        <AppText className="ml-1 text-xs text-slate-400">All</AppText>
+        <AppText className="ml-1 text-xs text-slate-400">ทุกคน</AppText>
       </View>
 
       {selectedDay && (

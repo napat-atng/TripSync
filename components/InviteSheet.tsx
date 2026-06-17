@@ -25,10 +25,10 @@ export function InviteSheet({ inviteToken, onClose }: InviteSheetProps) {
       const isAvailable = await Sharing.isAvailableAsync();
       if (isAvailable) {
         await Sharing.shareAsync(inviteUrl, {
-          dialogTitle: "Join my trip on TripSync!",
+          dialogTitle: "ชวนเพื่อนเข้าร่วมทริปใน TripSync!",
         });
       } else {
-        Alert.alert("Sharing not available", "Your device does not support sharing.");
+        Alert.alert("แชร์ไม่สามารถใช้ได้", "อุปกรณ์ของคุณไม่รองรับการแชร์");
       }
     } catch (error) {
       // Ignore abort errors
@@ -39,9 +39,9 @@ export function InviteSheet({ inviteToken, onClose }: InviteSheetProps) {
     <View className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white p-6 shadow-2xl">
       <View className="mb-6 items-center">
         <View className="mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
-        <AppText className="text-xl font-bold text-slate-900">Invite Friends</AppText>
+        <AppText className="text-xl font-bold text-slate-900">เชิญเพื่อน</AppText>
         <AppText className="mt-2 text-center text-sm text-slate-500">
-          Share this link with your friends to let them join the trip.
+          แชร์ลิงก์นี้ให้เพื่อนๆ เพื่อให้เข้าร่วมทริป
         </AppText>
       </View>
 
@@ -55,7 +55,7 @@ export function InviteSheet({ inviteToken, onClose }: InviteSheetProps) {
         className="mb-3 h-14 flex-row items-center justify-center rounded-lg bg-teal-600"
         onPress={handleShare}
       >
-        <AppText className="text-base font-semibold text-white">Share Link</AppText>
+        <AppText className="text-base font-semibold text-white">แชร์ลิงก์</AppText>
       </Pressable>
 
       <Pressable
@@ -65,12 +65,12 @@ export function InviteSheet({ inviteToken, onClose }: InviteSheetProps) {
         onPress={handleCopy}
       >
         <AppText className={`text-base font-semibold ${isCopied ? "text-emerald-600" : "text-slate-700"}`}>
-          {isCopied ? "Copied!" : "Copy Link"}
+          {isCopied ? "คัดลอกแล้ว!" : "คัดลอกลิงก์"}
         </AppText>
       </Pressable>
 
       <Pressable className="items-center py-2" onPress={onClose}>
-        <AppText className="font-semibold text-slate-500">Close</AppText>
+        <AppText className="font-semibold text-slate-500">ปิด</AppText>
       </Pressable>
     </View>
   );

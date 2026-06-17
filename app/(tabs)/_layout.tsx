@@ -10,7 +10,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: "#0f766e",
       }}
     >
-      <Tabs.Screen name="home" options={{ title: "Home" }} />
+      <Tabs.Screen name="home" options={{ title: "หน้าหลัก" }} />
     </Tabs>
   );
 }

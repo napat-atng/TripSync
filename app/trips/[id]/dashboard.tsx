@@ -17,7 +17,7 @@ import { getBestDates } from "../../../lib/availability";
 import type { DayAvailability } from "../../../types/availability";
 
 function formatDate(iso: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", {
+  return new Date(iso + "T00:00:00").toLocaleDateString("th-TH", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -76,13 +76,13 @@ export default function TripDashboardScreen() {
     if (!analytics) return;
     const pending = analytics.members.filter((m) => !m.responded);
     if (pending.length === 0) {
-      Alert.alert("All caught up", "Everyone has already responded!");
+      Alert.alert("สั่งเตือนเรียบร้อยแล้ว", "ทุกคนตอบแบบสอบถามครบแล้ว!");
       return;
     }
     const names = pending.map((m) => m.display_name ?? "a member").join(", ");
     const message = `Hey! Just a reminder to fill out the trip survey for "${trip?.name}" 🙏 — still waiting on: ${names}`;
     await Clipboard.setStringAsync(message);
-    Alert.alert("Copied to clipboard", "Reminder message copied. Paste it in your group chat!");
+    Alert.alert("คัดลอกปับเพลินบอร์ดแล้ว", "คัดลอกข้อความเตือนแล้ว เอาไปวางในกลุ่มแชทได้เลย!");
   };
 
   const handleSetTripDate = async (date: string) => {
@@ -90,9 +90,9 @@ export default function TripDashboardScreen() {
     setIsSettingDate(date);
     try {
       await setConfirmedDate(id, date);
-      Alert.alert("Trip date set!", `Confirmed for ${formatDate(date)}`);
+      Alert.alert("กำหนดวันเดินทางแล้ว!", `ยืนยันวัน ${formatDate(date)} แล้ว`);
     } catch {
-      Alert.alert("Error", "Could not set trip date. Please try again.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถกำหนดวันเดินทางได้ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setIsSettingDate(null);
     }
@@ -117,7 +117,7 @@ export default function TripDashboardScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: trip.name, headerBackTitle: "Home" }} />
+      <Stack.Screen options={{ title: trip.name, headerBackTitle: "หน้าแรก" }} />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         <AppText className="text-2xl font-bold text-slate-900">{trip.name}</AppText>
@@ -127,21 +127,21 @@ export default function TripDashboardScreen() {
         {trip.confirmed_date && (
           <View className="mt-3 self-start rounded-full bg-teal-100 px-3 py-1">
             <AppText className="text-xs font-semibold text-teal-800">
-              📅 Confirmed: {formatDate(trip.confirmed_date)}
+              📅 ยืนยันแล้ว: {formatDate(trip.confirmed_date)}
             </AppText>
           </View>
         )}
 
         {/* ---------------- QUICK STATS ---------------- */}
         <View className="mt-6 flex-row gap-2">
-          <QuickStat label="Members" value={String(analytics?.totalMembers ?? 0)} />
-          <QuickStat label="Survey done" value={`${analytics?.completionPct ?? 0}%`} />
-          <QuickStat label="Budget" value={budgetLabel} small />
-          <QuickStat label="Best date" value={bestDateLabel} small />
+          <QuickStat label="สมาชิก" value={String(analytics?.totalMembers ?? 0)} />
+          <QuickStat label="ตอบครบ" value={`${analytics?.completionPct ?? 0}%`} />
+          <QuickStat label="งบประมาณ" value={budgetLabel} small />
+          <QuickStat label="วันที่เหมาะ" value={bestDateLabel} small />
         </View>
 
         {/* ---------------- RESPONSE STATUS ---------------- */}
-        <Section title="Response Status">
+        <Section title="สถานะการตอบ">
           {analytics && analytics.totalMembers > 0 && (
             <>
               <View className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -151,7 +151,7 @@ export default function TripDashboardScreen() {
                 />
               </View>
               <AppText className="mb-3 text-xs text-slate-500">
-                {analytics.respondedCount}/{analytics.totalMembers} members responded
+                {analytics.respondedCount}/{analytics.totalMembers} คนตอบแล้ว
               </AppText>
 
               {analytics.members.map((m) => (
@@ -159,16 +159,16 @@ export default function TripDashboardScreen() {
                   key={m.member_id}
                   className="mb-2 flex-row items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
                 >
-                  <AppText className="text-sm text-slate-800">{m.display_name ?? "Unnamed"}</AppText>
+                  <AppText className="text-sm text-slate-800">{m.display_name ?? "ไม่ระบุชื่อ"}</AppText>
                   {m.responded ? (
                     <View className="flex-row items-center gap-1">
                       <AppText className="text-sm text-green-600">✓</AppText>
-                      <AppText className="text-xs font-medium text-green-700">Responded</AppText>
+                      <AppText className="text-xs font-medium text-green-700">ตอบแล้ว</AppText>
                     </View>
                   ) : (
                     <View className="flex-row items-center gap-1">
                       <AppText className="text-sm text-slate-400">🕒</AppText>
-                      <AppText className="text-xs font-medium text-slate-400">Pending</AppText>
+                      <AppText className="text-xs font-medium text-slate-400">รอดำเนินการ</AppText>
                     </View>
                   )}
                 </View>
@@ -180,7 +180,7 @@ export default function TripDashboardScreen() {
                   onPress={handleRemind}
                 >
                   <AppText className="text-sm font-semibold text-amber-700">
-                    Remind pending members
+                    เตือนสมาชิกที่ยังไม่ตอบ
                   </AppText>
                 </Pressable>
               )}
@@ -189,10 +189,10 @@ export default function TripDashboardScreen() {
         </Section>
 
         {/* ---------------- BEST DATES ---------------- */}
-        <Section title="Best Dates">
+        <Section title="วันที่เหมาะที่สุด">
           {bestDates.length === 0 ? (
             <AppText className="text-sm text-slate-500">
-              No availability marked yet. Ask members to mark their dates.
+              ยังไม่มีเครื่องหมายวันว่างงาน ขอให้สมาชิกระบุวันของตนเอง
             </AppText>
           ) : (
             bestDates.map((d, i) => (
@@ -218,7 +218,7 @@ export default function TripDashboardScreen() {
                     {isSettingDate === d.date ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <AppText className="text-xs font-semibold text-white">Set as trip date</AppText>
+                      <AppText className="text-xs font-semibold text-white">เลือกเป็นวันเดินทาง</AppText>
                     )}
                   </Pressable>
                 )}
@@ -231,7 +231,7 @@ export default function TripDashboardScreen() {
             onPress={() => setShowHeatmap((v) => !v)}
           >
             <AppText className="text-sm font-semibold text-green-700">
-              {showHeatmap ? "Hide" : "View"} full calendar heatmap
+              {showHeatmap ? "ซ่อน" : "ดู"}ไทมไลน์วันว่างทั้งหมด
             </AppText>
           </Pressable>
 
@@ -245,67 +245,67 @@ export default function TripDashboardScreen() {
             className="mt-3 h-10 items-center justify-center rounded-lg bg-slate-900"
             onPress={() => router.push(`/trips/${trip.id}/availability` as any)}
           >
-            <AppText className="text-sm font-semibold text-white">Mark My Availability</AppText>
+            <AppText className="text-sm font-semibold text-white">ระบุวันว่างของฉัน</AppText>
           </Pressable>
         </Section>
 
         {/* ---------------- SURVEY RESULTS ---------------- */}
-        <Section title="Survey Results">
+        <Section title="ผลสำรวจ">
           <SurveyResultsSection results={analytics?.results ?? []} />
           <View className="flex-row gap-3">
             <Pressable
               className="flex-1 h-11 items-center justify-center rounded-lg bg-teal-600"
               onPress={() => router.push(`/trips/${trip.id}/survey/respond` as any)}
             >
-              <AppText className="font-semibold text-white">Take Survey</AppText>
+              <AppText className="font-semibold text-white">ตอบแบบสอบถาม</AppText>
             </Pressable>
             {isLeader && (
               <Pressable
                 className="flex-1 h-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50"
                 onPress={() => router.push(`/trips/${trip.id}/survey/builder` as any)}
               >
-                <AppText className="font-semibold text-slate-700">Edit Survey</AppText>
+                <AppText className="font-semibold text-slate-700">แก้ไขแบบสอบถาม</AppText>
               </Pressable>
             )}
           </View>
         </Section>
 
         {/* ---------------- VOTE ---------------- */}
-        <Section title="Quick Vote">
+        <Section title="โหวตอบคำถาม">
           <VoteSection tripId={trip.id} myMemberId={myMemberId} isLeader={!!isLeader} />
         </Section>
 
         {/* ---------------- EXPENSES ---------------- */}
-        <Section title="Expenses">
+        <Section title="ค่าใช้จ่าย">
           <AppText className="mb-4 text-sm text-slate-500">
-            Track spending and split the bill with the group.
+            ติดตามค่าใช้จ่ายและหารแสงจำนวนเงินแบบกลุ่ม
           </AppText>
           <View className="flex-row gap-3">
             <Pressable
               className="flex-1 h-11 items-center justify-center rounded-lg bg-teal-600"
               onPress={() => router.push(`/trips/${trip.id}/expenses` as any)}
             >
-              <AppText className="font-semibold text-white">View Expenses</AppText>
+              <AppText className="font-semibold text-white">ดูค่าใช้จ่าย</AppText>
             </Pressable>
             <Pressable
               className="flex-1 h-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50"
               onPress={() => router.push(`/trips/${trip.id}/expenses/add` as any)}
             >
-              <AppText className="font-semibold text-slate-700">+ Add</AppText>
+              <AppText className="font-semibold text-slate-700">+ เพิ่ม</AppText>
             </Pressable>
           </View>
         </Section>
 
         {/* ---------------- MEMBERS ---------------- */}
-        <Section title="Trip Members">
+        <Section title="สมาชิกในทริป">
           <AppText className="mb-4 text-sm text-slate-500">
-            Invite your friends to start planning together.
+            ชวนเพื่อนๆ สักคนมาวางแผนด้วยกันเลย!
           </AppText>
           <Pressable
             className="h-11 items-center justify-center rounded-lg bg-teal-50"
             onPress={() => setIsInviteSheetVisible(true)}
           >
-            <AppText className="font-semibold text-teal-700">Invite Friends</AppText>
+            <AppText className="font-semibold text-teal-700">เชิญเพื่อน</AppText>
           </Pressable>
         </Section>
       </ScrollView>

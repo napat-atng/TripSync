@@ -24,7 +24,7 @@ export default function HomeScreen() {
       const data = await getUserTrips(user!.id);
       setTrips(data);
     } catch (error) {
-      Alert.alert("Error", "Failed to load trips.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดรายการทริปได้");
     } finally {
       setIsLoading(false);
     }
@@ -36,8 +36,8 @@ export default function HomeScreen() {
       router.replace("/(auth)/login");
     } catch (error) {
       Alert.alert(
-        "Sign out failed",
-        error instanceof Error ? error.message : "Please try again.",
+        "ออกจากระบบไม่สำเร็จ",
+        error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง",
       );
     }
   };
@@ -47,7 +47,7 @@ export default function HomeScreen() {
       <View className="flex-row items-center justify-between px-6 py-4">
         <AppText className="text-2xl font-bold text-slate-950">TripSync</AppText>
         <Pressable onPress={handleSignOut}>
-          <AppText className="text-sm font-semibold text-slate-600">Sign out</AppText>
+          <AppText className="text-sm font-semibold text-slate-600">ออกจากระบบ</AppText>
         </Pressable>
       </View>
 
@@ -63,10 +63,10 @@ export default function HomeScreen() {
           ListEmptyComponent={
             <View className="mt-20 items-center">
               <AppText className="text-center text-lg font-semibold text-slate-700">
-                No trips yet
+                ยังไม่มีทริป
               </AppText>
               <AppText className="mt-2 text-center text-slate-500">
-                Tap the button below to create your first trip!
+                กดปุ่ม + ด้านล่างเพื่อสร้างทริปแรกของคุณ!
               </AppText>
             </View>
           }

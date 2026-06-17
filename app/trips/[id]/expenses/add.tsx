@@ -65,7 +65,7 @@ export default function AddExpenseScreen() {
         setValue("paidBy", data[0].id);
       }
     } catch {
-      Alert.alert("Error", "Could not load trip members.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดสมาชิกทริปได้");
     } finally {
       setIsLoadingMembers(false);
     }
@@ -84,19 +84,19 @@ export default function AddExpenseScreen() {
     const amountNum = parseFloat(values.amount);
 
     if (!values.title.trim()) {
-      Alert.alert("Missing title", "Please enter a title for this expense.");
+      Alert.alert("ข้อมูลไม่ครบ", "กรุณากรอกชื่อค่าใช้จ่าย");
       return;
     }
     if (!amountNum || amountNum <= 0) {
-      Alert.alert("Invalid amount", "Please enter a valid amount greater than 0.");
+      Alert.alert("จำนวนเงินไม่ถูกต้อง", "กรุณากรอกจำนวนเงินให้มากกว่า 0");
       return;
     }
     if (!values.paidBy) {
-      Alert.alert("Missing payer", "Please select who paid.");
+      Alert.alert("ข้อมูลไม่ครบ", "กรุณาเลือกผู้จ่ายเงิน");
       return;
     }
     if (selectedSplitIds.size === 0) {
-      Alert.alert("No split selected", "Select at least one member to split this with.");
+      Alert.alert("ไม่ได้เลือกผู้หาร", "กรุณาเลือกสมาชิกอย่างน้อยหนึ่งคนเพื่อหารค่าใช้จ่าย");
       return;
     }
 
@@ -112,8 +112,8 @@ export default function AddExpenseScreen() {
       router.back();
     } catch (error) {
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Could not save expense. Please try again.",
+        "ข้อผิดพลาด",
+        error instanceof Error ? error.message : "ไม่สามารถบันทึกค่าใช้จ่ายได้ กรุณาลองใหม่อีกครั้ง",
       );
     } finally {
       setIsSubmitting(false);
@@ -136,18 +136,18 @@ export default function AddExpenseScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "Add Expense" }} />
+      <Stack.Screen options={{ title: "เพิ่มค่าใช้จ่าย" }} />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         {/* Title */}
-        <AppText className="mb-1 text-sm font-medium text-slate-600">Title</AppText>
+        <AppText className="mb-1 text-sm font-medium text-slate-600">ชื่อรายการ</AppText>
         <Controller
           control={control}
           name="title"
           render={({ field: { value, onChange } }) => (
             <TextInput
               className="mb-4 h-12 rounded-lg border border-slate-200 bg-white px-4 text-base text-slate-900"
-              placeholder="e.g. Dinner at the beach"
+              placeholder="เช่น อาหารเย็นริมหาด"
               value={value}
               onChangeText={onChange}
             />
@@ -155,7 +155,7 @@ export default function AddExpenseScreen() {
         />
 
         {/* Amount */}
-        <AppText className="mb-1 text-sm font-medium text-slate-600">Amount (THB)</AppText>
+        <AppText className="mb-1 text-sm font-medium text-slate-600">จำนวนเงิน (บาท)</AppText>
         <Controller
           control={control}
           name="amount"
@@ -171,7 +171,7 @@ export default function AddExpenseScreen() {
         />
 
         {/* Date */}
-        <AppText className="mb-1 text-sm font-medium text-slate-600">Date</AppText>
+        <AppText className="mb-1 text-sm font-medium text-slate-600">วันที่</AppText>
         <Controller
           control={control}
           name="expenseDate"
@@ -186,7 +186,7 @@ export default function AddExpenseScreen() {
         />
 
         {/* Paid by */}
-        <AppText className="mb-2 text-sm font-medium text-slate-600">Paid by</AppText>
+        <AppText className="mb-2 text-sm font-medium text-slate-600">จ่ายโดย</AppText>
         <View className="mb-5 flex-row flex-wrap gap-2">
           {members.map((m) => {
             const isSelected = paidBy === m.id;
@@ -201,7 +201,7 @@ export default function AddExpenseScreen() {
                 <AppText
                   className={`text-sm font-medium ${isSelected ? "text-white" : "text-slate-700"}`}
                 >
-                  {m.display_name ?? "Unnamed"}
+                  {m.display_name ?? "ไม่ระบุชื่อ"}
                 </AppText>
               </Pressable>
             );
@@ -210,9 +210,9 @@ export default function AddExpenseScreen() {
 
         {/* Split between */}
         <View className="mb-2 flex-row items-center justify-between">
-          <AppText className="text-sm font-medium text-slate-600">Split between</AppText>
+          <AppText className="text-sm font-medium text-slate-600">หารกันระหว่าง</AppText>
           <AppText className="text-xs text-slate-400">
-            {selectedSplitIds.size} of {members.length} selected
+            เลือก {selectedSplitIds.size} จาก {members.length} คน
           </AppText>
         </View>
 
@@ -227,7 +227,7 @@ export default function AddExpenseScreen() {
                   idx !== members.length - 1 ? "border-b border-slate-100" : ""
                 }`}
               >
-                <AppText className="text-sm text-slate-800">{m.display_name ?? "Unnamed"}</AppText>
+                <AppText className="text-sm text-slate-800">{m.display_name ?? "ไม่ระบุชื่อ"}</AppText>
                 <View
                   className={`h-5 w-5 items-center justify-center rounded-md border ${
                     checked ? "border-teal-600 bg-teal-600" : "border-slate-300 bg-white"
@@ -244,7 +244,7 @@ export default function AddExpenseScreen() {
         {selectedSplitIds.size > 0 && (
           <View className="mb-6 rounded-lg bg-teal-50 p-4">
             <AppText className="text-sm text-teal-800">
-              Each person pays{" "}
+              จ่ายคนละ {" "}
               <AppText className="font-semibold text-teal-900">฿{perPersonShare}</AppText>
             </AppText>
           </View>
@@ -258,7 +258,7 @@ export default function AddExpenseScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <AppText className="font-semibold text-white">Save Expense</AppText>
+            <AppText className="font-semibold text-white">บันทึกค่าใช้จ่าย</AppText>
           )}
         </Pressable>
       </ScrollView>

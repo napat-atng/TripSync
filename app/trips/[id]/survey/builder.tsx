@@ -24,7 +24,7 @@ export default function SurveyBuilderScreen() {
       const data = await getQuestions(tripId!);
       setQuestions(data || []);
     } catch (error) {
-      Alert.alert("Error", "Could not load survey questions");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดคำถามได้");
     } finally {
       setIsLoading(false);
     }
@@ -39,10 +39,10 @@ export default function SurveyBuilderScreen() {
         order_index: index,
       }));
       await saveQuestions(tripId!, payload);
-      Alert.alert("Success", "Survey saved successfully!");
+      Alert.alert("บันทึกเรียบร้อย", "บันทึกแบบสอบถามสำเร็จแล้ว!");
       router.back();
     } catch (error) {
-      Alert.alert("Error", "Could not save survey.");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถบันทึกแบบสอบถามได้");
     } finally {
       setIsSaving(false);
     }
@@ -53,7 +53,7 @@ export default function SurveyBuilderScreen() {
       id: Math.random().toString(36).substring(7), // Temp ID for new items
       trip_id: tripId!,
       type,
-      question: "New Question",
+      question: "คำถามใหม่",
       options: type === "multiple_choice" ? ["Option 1", "Option 2"] : type === "budget_range" ? { min: 0, max: 1000, step: 100 } : null,
       order_index: questions.length,
       created_at: new Date().toISOString(),
@@ -83,18 +83,18 @@ export default function SurveyBuilderScreen() {
                 <AppText className="text-xs font-semibold uppercase text-slate-600">{item.type.replace("_", " ")}</AppText>
               </View>
               <Pressable onPress={() => deleteQuestion(item.id)}>
-                <AppText className="text-red-500">Delete</AppText>
+                <AppText className="text-red-500">ลบ</AppText>
               </Pressable>
             </View>
             <TextInput
               className="h-10 border-b border-slate-200 text-base text-slate-900"
               value={item.question}
               onChangeText={(text) => updateQuestionText(item.id, text)}
-              placeholder="Enter your question"
+              placeholder="พิมพ์คำถามของคุณ"
             />
             {item.type === "multiple_choice" && (
               <AppText className="mt-2 text-xs text-slate-500">
-                Options: {item.options?.join(", ")} (Edit via web dashboard for advanced setup)
+                ตัวเลือก: {item.options?.join(", ")} (แก้ไขรายละเอียดเพิ่มเติมผ่านเว็บไซต์)
               </AppText>
             )}
           </View>
@@ -123,7 +123,7 @@ export default function SurveyBuilderScreen() {
           renderItem={renderItem}
           ListEmptyComponent={
             <View className="items-center justify-center py-10">
-              <AppText className="text-slate-500">No questions yet. Add one to start!</AppText>
+              <AppText className="text-slate-500">ยังไม่มีคำถาม กด + เพิ่มคำถามเพื่อเริ่มต้น!</AppText>
             </View>
           }
         />
@@ -134,14 +134,14 @@ export default function SurveyBuilderScreen() {
           className="flex-1 mr-2 h-12 items-center justify-center rounded-lg border border-teal-600 bg-teal-50"
           onPress={() => setAddModalVisible(true)}
         >
-          <AppText className="font-semibold text-teal-700">+ Add Question</AppText>
+          <AppText className="font-semibold text-teal-700">+ เพิ่มคำถาม</AppText>
         </Pressable>
         <Pressable
           className="flex-1 ml-2 h-12 items-center justify-center rounded-lg bg-teal-600"
           onPress={handleSave}
           disabled={isSaving}
         >
-          {isSaving ? <ActivityIndicator color="#fff" /> : <AppText className="font-semibold text-white">Save Survey</AppText>}
+          {isSaving ? <ActivityIndicator color="#fff" /> : <AppText className="font-semibold text-white">บันทึกแบบสอบถาม</AppText>}
         </Pressable>
       </View>
 
@@ -149,17 +149,17 @@ export default function SurveyBuilderScreen() {
         <View className="flex-1 justify-end bg-black/30">
           <View className="rounded-t-2xl bg-white p-6 pb-12">
             <View className="mb-4 flex-row items-center justify-between">
-              <AppText className="text-xl font-bold text-slate-900">Select Type</AppText>
+              <AppText className="text-xl font-bold text-slate-900">เลือกประเภทคำถาม</AppText>
               <Pressable onPress={() => setAddModalVisible(false)}>
-                <AppText className="text-slate-500">Close</AppText>
+                <AppText className="text-slate-500">ปิด</AppText>
               </Pressable>
             </View>
             <View className="space-y-3">
               {[
-                { type: "text", label: "Text Response", desc: "Short or long text answer" },
-                { type: "date_range", label: "Date Range", desc: "Pick start and end dates" },
-                { type: "multiple_choice", label: "Multiple Choice", desc: "Select options" },
-                { type: "budget_range", label: "Budget Range", desc: "Select min and max budget" },
+                { type: "text", label: "ตอบข้อความ", desc: "กรอกข้อความเสรี" },
+                { type: "date_range", label: "ช่วงวันที่", desc: "เลือกวันเริ่มต้นและวันสิ้นสุด" },
+                { type: "multiple_choice", label: "ตัวเลือก", desc: "เลือกจากตัวเลือกที่กำหนด" },
+                { type: "budget_range", label: "ช่วงงบประมาณ", desc: "เลือกงบขั้นต่ำและขั้นสูง" },
               ].map((opt) => (
                 <Pressable
                   key={opt.type}

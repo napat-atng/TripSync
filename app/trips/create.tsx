@@ -26,8 +26,8 @@ export default function CreateTripScreen() {
       router.replace(`/trips/${trip.id}/dashboard` as any);
     } catch (error: any) {
       Alert.alert(
-        "Failed to create trip",
-        error?.message || JSON.stringify(error) || "Please try again."
+        "สร้างทริปไม่สำเร็จ",
+        error?.message || JSON.stringify(error) || "กรุณาลองใหม่อีกครั้ง"
       );
     } finally {
       setIsSubmitting(false);
@@ -37,23 +37,23 @@ export default function CreateTripScreen() {
   return (
     <View className="flex-1 bg-slate-50 px-6 pt-10">
       <View className="mb-8">
-        <AppText className="text-3xl font-bold text-slate-950">New Trip</AppText>
+        <AppText className="text-3xl font-bold text-slate-950">สร้างทริปใหม่</AppText>
         <AppText className="mt-2 text-base text-slate-600">
-          Where are we going?
+          จะไปที่ไหนกันดี?
         </AppText>
       </View>
 
       <View className="mb-6">
         <AppText className="mb-2 text-sm font-semibold text-slate-700">
-          Trip Name *
+          ชื่อทริป *
         </AppText>
         <Controller
           control={control}
-          rules={{ required: "Trip name is required" }}
+          rules={{ required: "กรุณากรอกชื่อทริป" }}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               className="h-14 rounded-lg border border-slate-300 bg-white px-4 text-base"
-              placeholder="e.g. Summer in Tokyo"
+              placeholder="เช่น สายฟ้าไปโตเกียว"
               placeholderTextColor="#94a3b8"
               onBlur={onBlur}
               onChangeText={onChange}
@@ -69,14 +69,14 @@ export default function CreateTripScreen() {
 
       <View className="mb-8">
         <AppText className="mb-2 text-sm font-semibold text-slate-700">
-          Description (Optional)
+          รายละเอียด (ไม่บังคับ)
         </AppText>
         <Controller
           control={control}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               className="min-h-[100px] rounded-lg border border-slate-300 bg-white p-4 text-base"
-              placeholder="What's the vibe?"
+              placeholder="ทริปนี้เป็นยังไง?"
               placeholderTextColor="#94a3b8"
               multiline
               textAlignVertical="top"
@@ -98,7 +98,7 @@ export default function CreateTripScreen() {
         {isSubmitting ? (
           <ActivityIndicator color="#ffffff" />
         ) : (
-          <AppText className="text-base font-semibold text-white">Create Trip</AppText>
+          <AppText className="text-base font-semibold text-white">สร้างทริป</AppText>
         )}
       </Pressable>
 
@@ -108,7 +108,7 @@ export default function CreateTripScreen() {
         disabled={isSubmitting}
         onPress={() => router.back()}
       >
-        <AppText className="text-base font-semibold text-slate-600">Cancel</AppText>
+        <AppText className="text-base font-semibold text-slate-600">ยกเลิก</AppText>
       </Pressable>
     </View>
   );
