@@ -13,6 +13,7 @@ export type Database = {
           endsAt: string | null;
           invite_token: string;
           confirmed_date: string | null;
+          created_by: string | null;
           created_at: string;
         };
         Insert: {
@@ -22,8 +23,9 @@ export type Database = {
           destination?: string | null;
           startsAt?: string | null;
           endsAt?: string | null;
-          invite_token: string;
+          invite_token?: string;
           confirmed_date?: string | null;
+          created_by?: string | null;
           created_at?: string;
         };
         Update: {
@@ -35,6 +37,7 @@ export type Database = {
           endsAt?: string | null;
           invite_token?: string;
           confirmed_date?: string | null;
+          created_by?: string | null;
           created_at?: string;
         };
       };
