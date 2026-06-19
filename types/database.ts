@@ -14,6 +14,7 @@ export type Database = {
           invite_token: string;
           confirmed_date: string | null;
           created_by: string | null;
+          ai_suggestions: any | null;
           created_at: string;
         };
         Insert: {

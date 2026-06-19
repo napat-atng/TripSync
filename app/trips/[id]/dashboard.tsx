@@ -275,6 +275,21 @@ export default function TripDashboardScreen() {
           <VoteSection tripId={trip.id} myMemberId={myMemberId} isLeader={!!isLeader} />
         </Section>
 
+        {/* ---------------- AI SUGGEST ---------------- */}
+        <Section title="AI แนะนำจุดหมาย">
+          <AppText className="mb-4 text-sm text-slate-500">
+            ให้ AI วิเคราะห์วันว่าง งบประมาณ และความต้องการของกลุ่ม แล้วแนะนำจุดหมายที่เหมาะที่สุด
+          </AppText>
+          <Pressable
+            className="h-11 items-center justify-center rounded-lg bg-teal-600"
+            onPress={() => router.push(`/trips/${trip.id}/suggest` as any)}
+          >
+            <AppText className="font-semibold text-white">
+              {isLeader ? "ดูและสร้างคำแนะนำ AI" : "ดูคำแนะนำจุดหมาย"}
+            </AppText>
+          </Pressable>
+        </Section>
+
         {/* ---------------- EXPENSES ---------------- */}
         <Section title="ค่าใช้จ่าย">
           <AppText className="mb-4 text-sm text-slate-500">
