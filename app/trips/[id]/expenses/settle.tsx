@@ -4,6 +4,8 @@ import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import { AppText } from "../../../../components/AppText";
 import { getSettlementSummary, markDebtAsSettled } from "../../../../lib/expenses";
+import { sendPushNotification } from "../../../../lib/notifications";
+import { supabase } from "../../../../lib/supabase";
 import type { MemberBalance, SimplifiedDebt } from "../../../../types/expense";
 
 function formatMoney(n: number) {
@@ -43,6 +45,23 @@ export default function SettleUpScreen() {
     setSettlingKey(key);
     try {
       await markDebtAsSettled(debt.split_ids);
+
+      // Trigger 4: notify payer that their debt was settled
+      const { data: payerRow } = await (supabase as any)
+        .from("trip_members")
+        .select("user_id")
+        .eq("id", debt.to_member_id)
+        .single();
+
+      if (payerRow?.user_id) {
+        sendPushNotification(
+          [payerRow.user_id],
+          `${debt.from_name ?? "Someone"} จ่ายเงินคืนแล้ว! ✅`,
+          `${debt.from_name ?? "Someone"} จ่ายคืน ฿${debt.amount.toLocaleString()} THB แล้ว`,
+          { tripId: tripId },
+        );
+      }
+
       await load();
     } catch {
       Alert.alert("ข้อผิดพลาด", "ไม่สามารถเคลียร์หนี้ได้ กรุณาลองใหม่อีกครั้ง");

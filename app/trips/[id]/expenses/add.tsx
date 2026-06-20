@@ -13,6 +13,8 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { AppText } from "../../../../components/AppText";
 import { getMembersByTrip } from "../../../../lib/members";
 import { addExpense } from "../../../../lib/expenses";
+import { sendPushNotification, getMemberUserIds } from "../../../../lib/notifications";
+import { useAuth } from "../../../../hooks/useAuth";
 import type { TripMember } from "../../../../types/trip";
 
 type FormValues = {
@@ -28,6 +30,7 @@ function todayISO() {
 
 export default function AddExpenseScreen() {
   const { id: tripId } = useLocalSearchParams<{ id: string }>();
+  const user = useAuth((s) => s.user);
 
   const [members, setMembers] = useState<TripMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
@@ -109,6 +112,19 @@ export default function AddExpenseScreen() {
         expenseDate: values.expenseDate,
         splitMemberIds: Array.from(selectedSplitIds),
       });
+
+      // Trigger 3: notify all trip members someone added an expense
+      const payerName = members.find((m) => m.id === values.paidBy)?.display_name ?? "Someone";
+      const otherUserIds = await getMemberUserIds(tripId!, user?.id);
+      if (otherUserIds.length > 0) {
+        sendPushNotification(
+          otherUserIds,
+          `${payerName} เพิ่มค่าใช้จ่ายใหม่`,
+          `${payerName} เพิ่ม "${values.title.trim()}" ฿${amountNum.toLocaleString()} THB`,
+          { tripId: tripId },
+        );
+      }
+
       router.back();
     } catch (error) {
       Alert.alert(

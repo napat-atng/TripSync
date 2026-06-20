@@ -9,6 +9,8 @@ import { joinTripAsUser, joinTripAsGuest } from "../../lib/members";
 import { useAuth } from "../../hooks/useAuth";
 import type { Trip } from "../../types/trip";
 
+import { sendPushNotification, getLeaderUserId } from "../../lib/notifications";
+
 export default function JoinTripScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const user = useAuth((state) => state.user);
@@ -46,6 +48,18 @@ export default function JoinTripScreen() {
     try {
       const defaultName = user?.email?.split("@")[0] || "Member";
       await joinTripAsUser(targetTrip.id, user!.id, defaultName);
+
+      // Trigger 1: notify leader someone joined
+      const leaderUserId = await getLeaderUserId(targetTrip.id);
+      if (leaderUserId && leaderUserId !== user!.id) {
+        await sendPushNotification(
+          [leaderUserId],
+          `${defaultName} joined your trip!`,
+          `${defaultName} has joined "${targetTrip.name}"`,
+          { tripId: targetTrip.id },
+        );
+      }
+
       router.replace(`/trips/${targetTrip.id}/dashboard` as any);
     } catch (error) {
       Alert.alert("เข้าร่วมไม่สำเร็จ", "ไม่สามารถเข้าร่วมทริปนี้ได้ในขณะนี้");
@@ -69,6 +83,18 @@ export default function JoinTripScreen() {
       const memberships = existingMembershipsStr ? JSON.parse(existingMembershipsStr) : {};
       memberships[trip.id] = member.id;
       await AsyncStorage.setItem("guest_memberships", JSON.stringify(memberships));
+
+      // Trigger 1: notify leader a guest joined (fire-and-forget)
+      getLeaderUserId(trip.id).then((leaderUserId) => {
+        if (leaderUserId) {
+          sendPushNotification(
+            [leaderUserId],
+            `${displayName.trim()} joined your trip!`,
+            `${displayName.trim()} has joined "${trip.name}"`,
+            { tripId: trip.id },
+          );
+        }
+      });
 
       router.replace(`/trips/${trip.id}/dashboard` as any);
     } catch (error) {

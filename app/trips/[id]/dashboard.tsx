@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { View, ActivityIndicator, ScrollView, Pressable, Alert } from "react-native";
 import { useLocalSearchParams, Stack, router, useFocusEffect } from "expo-router";
 import * as Clipboard from "expo-clipboard";
@@ -14,6 +14,8 @@ import { getMyMemberId } from "../../../lib/members";
 import { setConfirmedDate } from "../../../lib/trips";
 import { getSurveyAnalytics, type SurveyAnalytics } from "../../../lib/survey-analytics";
 import { getBestDates } from "../../../lib/availability";
+import { sendPushNotification, getLeaderUserId } from "../../../lib/notifications";
+import { supabase } from "../../../lib/supabase";
 import type { DayAvailability } from "../../../types/availability";
 
 function formatDate(iso: string) {
@@ -43,6 +45,8 @@ export default function TripDashboardScreen() {
     (m) => m.user_id === user?.id && m.role === "leader",
   );
 
+  const prevRespondedCount = useRef(0);
+
   const load = useCallback(async () => {
     if (!id) return;
     setIsLoading(true);
@@ -55,12 +59,31 @@ export default function TripDashboardScreen() {
       setMyMemberId(mid ?? null);
       setAnalytics(surveyData);
       setBestDates(dates);
+
+      // Trigger 2: notify leader when all members have now responded
+      if (
+        isLeader &&
+        surveyData.totalMembers > 0 &&
+        surveyData.respondedCount === surveyData.totalMembers &&
+        prevRespondedCount.current < surveyData.totalMembers
+      ) {
+        const leaderUserId = await getLeaderUserId(id);
+        if (leaderUserId) {
+          sendPushNotification(
+            [leaderUserId],
+            "ทุกคนตอบแล้ว! 🎉",
+            `สมาชิกทุกคนตอบแบบสอบถามสำหรับ "${trip?.name}" ครบแล้ว ดูผลได้เลย`,
+            { tripId: id },
+          );
+        }
+      }
+      prevRespondedCount.current = surveyData.respondedCount;
     } catch {
       // keep previous state; the dashboard sections handle empty data gracefully
     } finally {
       setIsLoading(false);
     }
-  }, [id, user?.id]);
+  }, [id, user?.id, isLeader, trip?.name]);
 
   useFocusEffect(
     useCallback(() => {
@@ -72,17 +95,38 @@ export default function TripDashboardScreen() {
     }, [trip, load]),
   );
 
+  // Reminder: push to members with accounts, clipboard fallback for guests
   const handleRemind = async () => {
-    if (!analytics) return;
+    if (!analytics || !id) return;
     const pending = analytics.members.filter((m) => !m.responded);
     if (pending.length === 0) {
       Alert.alert("สั่งเตือนเรียบร้อยแล้ว", "ทุกคนตอบแบบสอบถามครบแล้ว!");
       return;
     }
-    const names = pending.map((m) => m.display_name ?? "a member").join(", ");
-    const message = `Hey! Just a reminder to fill out the trip survey for "${trip?.name}" 🙏 — still waiting on: ${names}`;
-    await Clipboard.setStringAsync(message);
-    Alert.alert("คัดลอกปับเพลินบอร์ดแล้ว", "คัดลอกข้อความเตือนแล้ว เอาไปวางในกลุ่มแชทได้เลย!");
+
+    const { data: pendingRows } = await (supabase as any)
+      .from("trip_members")
+      .select("user_id")
+      .in("id", pending.map((m) => m.member_id))
+      .not("user_id", "is", null);
+
+    const pendingUserIds: string[] = (pendingRows ?? []).map((r: any) => r.user_id);
+
+    if (pendingUserIds.length > 0) {
+      await sendPushNotification(
+        pendingUserIds,
+        "อย่าลืมตอบแบบสอบถามนะ! 🙏",
+        `อย่าลืมตอบแบบสอบถามทริป "${trip?.name}" ด้วยนะ`,
+        { tripId: id },
+      );
+      Alert.alert("ส่งแจ้งเตือนแล้ว", `ส่งการแจ้งเตือนไปยังสมาชิก ${pendingUserIds.length} คนแล้ว`);
+    } else {
+      // Fallback: pending members are guests — copy reminder to clipboard
+      const names = pending.map((m) => m.display_name ?? "a member").join(", ");
+      const message = `อย่าลืมตอบแบบสอบถามทริป "${trip?.name}" ด้วยนะ 🙏 รอ: ${names}`;
+      await Clipboard.setStringAsync(message);
+      Alert.alert("คัดลอกแล้ว", "สมาชิกที่ยังไม่ตอบเป็นผู้เยี่ยม คัดลอกข้อความไว้แล้ว เอาไปวางในกลุ่มแชตได้เลย");
+    }
   };
 
   const handleSetTripDate = async (date: string) => {
@@ -293,7 +337,7 @@ export default function TripDashboardScreen() {
         {/* ---------------- EXPENSES ---------------- */}
         <Section title="ค่าใช้จ่าย">
           <AppText className="mb-4 text-sm text-slate-500">
-            ติดตามค่าใช้จ่ายและหารแสงจำนวนเงินแบบกลุ่ม
+            ติดตามค่าใช้จ่ายและหารจำนวนเงินแบบกลุ่ม
           </AppText>
           <View className="flex-row gap-3">
             <Pressable
