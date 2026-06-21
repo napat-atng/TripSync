@@ -18,6 +18,9 @@ import { sendPushNotification, getLeaderUserId } from "../../../lib/notification
 import { supabase } from "../../../lib/supabase";
 import type { DayAvailability } from "../../../types/availability";
 
+// Feature flag: set to true only after Edge Function is deployed
+const PUSH_NOTIFICATIONS_ENABLED = false;
+
 function formatDate(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("th-TH", {
     weekday: "short",
@@ -60,26 +63,34 @@ export default function TripDashboardScreen() {
       setAnalytics(surveyData);
       setBestDates(dates);
 
-      // Trigger 2: notify leader when all members have now responded
+      // Trigger 2: notify leader when all members have responded
+      // Wrapped in its own try/catch so notification failure never breaks the dashboard load
       if (
+        PUSH_NOTIFICATIONS_ENABLED &&
         isLeader &&
         surveyData.totalMembers > 0 &&
         surveyData.respondedCount === surveyData.totalMembers &&
         prevRespondedCount.current < surveyData.totalMembers
       ) {
-        const leaderUserId = await getLeaderUserId(id);
-        if (leaderUserId) {
-          sendPushNotification(
-            [leaderUserId],
-            "ทุกคนตอบแล้ว! 🎉",
-            `สมาชิกทุกคนตอบแบบสอบถามสำหรับ "${trip?.name}" ครบแล้ว ดูผลได้เลย`,
-            { tripId: id },
-          );
+        try {
+          const leaderUserId = await getLeaderUserId(id);
+          if (leaderUserId) {
+            await sendPushNotification(
+              [leaderUserId],
+              "ทุกคนตอบแล้ว! 🎉",
+              `สมาชิกทุกคนตอบแบบสอบถามสำหรับ "${trip?.name}" ครบแล้ว ดูผลได้เลย`,
+              { tripId: id },
+            );
+          }
+        } catch {
+          // notification failure is non-critical — log and continue
+          console.warn("[dashboard] survey-complete notification failed");
         }
       }
+
       prevRespondedCount.current = surveyData.respondedCount;
-    } catch {
-      // keep previous state; the dashboard sections handle empty data gracefully
+    } catch (err) {
+      console.warn("[dashboard] load error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -95,38 +106,49 @@ export default function TripDashboardScreen() {
     }, [trip, load]),
   );
 
-  // Reminder: push to members with accounts, clipboard fallback for guests
   const handleRemind = async () => {
     if (!analytics || !id) return;
     const pending = analytics.members.filter((m) => !m.responded);
+
     if (pending.length === 0) {
       Alert.alert("สั่งเตือนเรียบร้อยแล้ว", "ทุกคนตอบแบบสอบถามครบแล้ว!");
       return;
     }
 
-    const { data: pendingRows } = await (supabase as any)
-      .from("trip_members")
-      .select("user_id")
-      .in("id", pending.map((m) => m.member_id))
-      .not("user_id", "is", null);
+    if (PUSH_NOTIFICATIONS_ENABLED) {
+      // Send push notification to members with accounts
+      try {
+        const { data: pendingRows } = await (supabase as any)
+          .from("trip_members")
+          .select("user_id")
+          .in("id", pending.map((m) => m.member_id))
+          .not("user_id", "is", null);
 
-    const pendingUserIds: string[] = (pendingRows ?? []).map((r: any) => r.user_id);
+        const pendingUserIds: string[] = (pendingRows ?? []).map((r: any) => r.user_id);
 
-    if (pendingUserIds.length > 0) {
-      await sendPushNotification(
-        pendingUserIds,
-        "อย่าลืมตอบแบบสอบถามนะ! 🙏",
-        `อย่าลืมตอบแบบสอบถามทริป "${trip?.name}" ด้วยนะ`,
-        { tripId: id },
-      );
-      Alert.alert("ส่งแจ้งเตือนแล้ว", `ส่งการแจ้งเตือนไปยังสมาชิก ${pendingUserIds.length} คนแล้ว`);
-    } else {
-      // Fallback: pending members are guests — copy reminder to clipboard
-      const names = pending.map((m) => m.display_name ?? "a member").join(", ");
-      const message = `อย่าลืมตอบแบบสอบถามทริป "${trip?.name}" ด้วยนะ 🙏 รอ: ${names}`;
-      await Clipboard.setStringAsync(message);
-      Alert.alert("คัดลอกแล้ว", "สมาชิกที่ยังไม่ตอบเป็นผู้เยี่ยม คัดลอกข้อความไว้แล้ว เอาไปวางในกลุ่มแชตได้เลย");
+        if (pendingUserIds.length > 0) {
+          await sendPushNotification(
+            pendingUserIds,
+            "อย่าลืมตอบแบบสอบถามนะ! 🙏",
+            `อย่าลืมตอบแบบสอบถามทริป "${trip?.name}" ด้วยนะ`,
+            { tripId: id },
+          );
+          Alert.alert("ส่งแจ้งเตือนแล้ว", `ส่งการแจ้งเตือนไปยังสมาชิก ${pendingUserIds.length} คนแล้ว`);
+          return;
+        }
+      } catch {
+        console.warn("[dashboard] remind notification failed, falling back to clipboard");
+      }
     }
+
+    // Fallback: copy reminder message to clipboard (used when push is disabled or all pending are guests)
+    const names = pending.map((m) => m.display_name ?? "สมาชิก").join(", ");
+    const message = `อย่าลืมตอบแบบสอบถามทริป "${trip?.name}" ด้วยนะ 🙏 รอ: ${names}`;
+    await Clipboard.setStringAsync(message);
+    Alert.alert(
+      "คัดลอกข้อความแล้ว",
+      "เอาข้อความนี้ไปวางในกลุ่มแชตเพื่อเตือนสมาชิกได้เลย",
+    );
   };
 
   const handleSetTripDate = async (date: string) => {
@@ -186,7 +208,7 @@ export default function TripDashboardScreen() {
 
         {/* ---------------- RESPONSE STATUS ---------------- */}
         <Section title="สถานะการตอบ">
-          {analytics && analytics.totalMembers > 0 && (
+          {analytics && analytics.totalMembers > 0 ? (
             <>
               <View className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
                 <View
@@ -203,7 +225,9 @@ export default function TripDashboardScreen() {
                   key={m.member_id}
                   className="mb-2 flex-row items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
                 >
-                  <AppText className="text-sm text-slate-800">{m.display_name ?? "ไม่ระบุชื่อ"}</AppText>
+                  <AppText className="text-sm text-slate-800">
+                    {m.display_name ?? "ไม่ระบุชื่อ"}
+                  </AppText>
                   {m.responded ? (
                     <View className="flex-row items-center gap-1">
                       <AppText className="text-sm text-green-600">✓</AppText>
@@ -229,6 +253,10 @@ export default function TripDashboardScreen() {
                 </Pressable>
               )}
             </>
+          ) : (
+            <AppText className="text-sm text-slate-500">
+              ยังไม่มีแบบสอบถาม สร้างได้ที่ "แก้ไขแบบสอบถาม" ด้านล่าง
+            </AppText>
           )}
         </Section>
 
@@ -236,7 +264,7 @@ export default function TripDashboardScreen() {
         <Section title="วันที่เหมาะที่สุด">
           {bestDates.length === 0 ? (
             <AppText className="text-sm text-slate-500">
-              ยังไม่มีเครื่องหมายวันว่างงาน ขอให้สมาชิกระบุวันของตนเอง
+              ยังไม่มีข้อมูลวันว่าง ให้สมาชิกระบุวันว่างของตัวเองก่อนนะ
             </AppText>
           ) : (
             bestDates.map((d, i) => (
@@ -262,7 +290,9 @@ export default function TripDashboardScreen() {
                     {isSettingDate === d.date ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <AppText className="text-xs font-semibold text-white">เลือกเป็นวันเดินทาง</AppText>
+                      <AppText className="text-xs font-semibold text-white">
+                        เลือกเป็นวันเดินทาง
+                      </AppText>
                     )}
                   </Pressable>
                 )}
@@ -296,7 +326,7 @@ export default function TripDashboardScreen() {
         {/* ---------------- SURVEY RESULTS ---------------- */}
         <Section title="ผลสำรวจ">
           <SurveyResultsSection results={analytics?.results ?? []} />
-          <View className="flex-row gap-3">
+          <View className="mt-2 flex-row gap-3">
             <Pressable
               className="flex-1 h-11 items-center justify-center rounded-lg bg-teal-600"
               onPress={() => router.push(`/trips/${trip.id}/survey/respond` as any)}
@@ -317,21 +347,6 @@ export default function TripDashboardScreen() {
         {/* ---------------- VOTE ---------------- */}
         <Section title="โหวตอบคำถาม">
           <VoteSection tripId={trip.id} myMemberId={myMemberId} isLeader={!!isLeader} />
-        </Section>
-
-        {/* ---------------- AI SUGGEST ---------------- */}
-        <Section title="AI แนะนำจุดหมาย">
-          <AppText className="mb-4 text-sm text-slate-500">
-            ให้ AI วิเคราะห์วันว่าง งบประมาณ และความต้องการของกลุ่ม แล้วแนะนำจุดหมายที่เหมาะที่สุด
-          </AppText>
-          <Pressable
-            className="h-11 items-center justify-center rounded-lg bg-teal-600"
-            onPress={() => router.push(`/trips/${trip.id}/suggest` as any)}
-          >
-            <AppText className="font-semibold text-white">
-              {isLeader ? "ดูและสร้างคำแนะนำ AI" : "ดูคำแนะนำจุดหมาย"}
-            </AppText>
-          </Pressable>
         </Section>
 
         {/* ---------------- EXPENSES ---------------- */}

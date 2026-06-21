@@ -8,6 +8,8 @@ import { sendPushNotification } from "../../../../lib/notifications";
 import { supabase } from "../../../../lib/supabase";
 import type { MemberBalance, SimplifiedDebt } from "../../../../types/expense";
 
+const PUSH_NOTIFICATIONS_ENABLED = false;
+
 function formatMoney(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -47,19 +49,25 @@ export default function SettleUpScreen() {
       await markDebtAsSettled(debt.split_ids);
 
       // Trigger 4: notify payer that their debt was settled
-      const { data: payerRow } = await (supabase as any)
-        .from("trip_members")
-        .select("user_id")
-        .eq("id", debt.to_member_id)
-        .single();
+      if (PUSH_NOTIFICATIONS_ENABLED) {
+        try {
+          const { data: payerRow } = await (supabase as any)
+            .from("trip_members")
+            .select("user_id")
+            .eq("id", debt.to_member_id)
+            .single();
 
-      if (payerRow?.user_id) {
-        sendPushNotification(
-          [payerRow.user_id],
-          `${debt.from_name ?? "Someone"} จ่ายเงินคืนแล้ว! ✅`,
-          `${debt.from_name ?? "Someone"} จ่ายคืน ฿${debt.amount.toLocaleString()} THB แล้ว`,
-          { tripId: tripId },
-        );
+          if (payerRow?.user_id) {
+            await sendPushNotification(
+              [payerRow.user_id],
+              `${debt.from_name ?? "Someone"} จ่ายเงินคืนแล้ว! ✅`,
+              `${debt.from_name ?? "Someone"} จ่ายคืน ฿${debt.amount.toLocaleString()} THB แล้ว`,
+              { tripId: tripId },
+            );
+          }
+        } catch {
+          console.warn("[settle] notification failed");
+        }
       }
 
       await load();

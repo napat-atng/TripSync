@@ -17,6 +17,8 @@ import { sendPushNotification, getMemberUserIds } from "../../../../lib/notifica
 import { useAuth } from "../../../../hooks/useAuth";
 import type { TripMember } from "../../../../types/trip";
 
+const PUSH_NOTIFICATIONS_ENABLED = false;
+
 type FormValues = {
   title: string;
   amount: string;
@@ -114,15 +116,21 @@ export default function AddExpenseScreen() {
       });
 
       // Trigger 3: notify all trip members someone added an expense
-      const payerName = members.find((m) => m.id === values.paidBy)?.display_name ?? "Someone";
-      const otherUserIds = await getMemberUserIds(tripId!, user?.id);
-      if (otherUserIds.length > 0) {
-        sendPushNotification(
-          otherUserIds,
-          `${payerName} เพิ่มค่าใช้จ่ายใหม่`,
-          `${payerName} เพิ่ม "${values.title.trim()}" ฿${amountNum.toLocaleString()} THB`,
-          { tripId: tripId },
-        );
+      if (PUSH_NOTIFICATIONS_ENABLED) {
+        try {
+          const payerName = members.find((m) => m.id === values.paidBy)?.display_name ?? "Someone";
+          const otherUserIds = await getMemberUserIds(tripId!, user?.id);
+          if (otherUserIds.length > 0) {
+            await sendPushNotification(
+              otherUserIds,
+              `${payerName} เพิ่มค่าใช้จ่ายใหม่`,
+              `${payerName} เพิ่ม "${values.title.trim()}" ฿${amountNum.toLocaleString()} THB`,
+              { tripId: tripId },
+            );
+          }
+        } catch {
+          console.warn("[add-expense] notification failed");
+        }
       }
 
       router.back();

@@ -10,10 +10,13 @@ import {
 import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import { AppText } from "../../../components/AppText";
-import { generateSuggestions, getSavedSuggestions } from "../../../lib/suggestions";
+import { getSavedSuggestions } from "../../../lib/suggestions";
 import { useTripStore } from "../../../store/tripStore";
 import { useAuth } from "../../../hooks/useAuth";
 import type { DestinationSuggestion, SuggestionsResult } from "../../../types/suggestion";
+
+// Feature flag: set to true only after Edge Function is deployed
+const AI_SUGGEST_ENABLED = false;
 
 function formatMoney(n: number) {
   return n.toLocaleString("th-TH");
@@ -152,9 +155,17 @@ export default function SuggestScreen() {
   );
 
   const handleGenerate = async () => {
+    if (!AI_SUGGEST_ENABLED) {
+      Alert.alert(
+        "ยังไม่พร้อมใช้งาน",
+        "ฟีเจอร์ AI แนะนำจุดหมายต้องการการตั้งค่า Edge Function ก่อน",
+      );
+      return;
+    }
     if (!tripId) return;
     setIsGenerating(true);
     try {
+      const { generateSuggestions } = await import("../../../lib/suggestions");
       const data = await generateSuggestions(tripId);
       setResult(data);
     } catch (err) {
