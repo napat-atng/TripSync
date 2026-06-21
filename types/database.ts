@@ -72,7 +72,7 @@ export type Database = {
         Row: {
           id: string;
           trip_id: string;
-          type: "date_range" | "multiple_choice" | "budget_range" | "text";
+          type: "multiple_choice" | "budget_range" | "text";
           question: string;
           options: any | null;
           order_index: number;
@@ -81,7 +81,7 @@ export type Database = {
         Insert: {
           id?: string;
           trip_id: string;
-          type: "date_range" | "multiple_choice" | "budget_range" | "text";
+          type: "multiple_choice" | "budget_range" | "text";
           question: string;
           options?: any | null;
           order_index?: number;
@@ -90,7 +90,7 @@ export type Database = {
         Update: {
           id?: string;
           trip_id?: string;
-          type?: "date_range" | "multiple_choice" | "budget_range" | "text";
+          type?: "multiple_choice" | "budget_range" | "text";
           question?: string;
           options?: any | null;
           order_index?: number;

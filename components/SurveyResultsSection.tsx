@@ -61,27 +61,6 @@ export function SurveyResultsSection({ results }: { results: QuestionResult[] })
             </View>
           )}
 
-          {r.type === "date_range" && (
-            <View>
-              {r.answers.length === 0 ? (
-                <AppText className="text-xs text-slate-400">No responses yet.</AppText>
-              ) : (
-                r.answers.map((a, idx) => (
-                  <View
-                    key={`${a.member_id}-${idx}`}
-                    className="mb-2 flex-row items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
-                  >
-                    <AppText className="text-xs font-medium text-slate-500">
-                      {a.display_name ?? "ผู้เยี่ยม"}
-                    </AppText>
-                    <AppText className="text-sm text-slate-800">
-                      {a.start ?? "?"} → {a.end ?? "?"}
-                    </AppText>
-                  </View>
-                ))
-              )}
-            </View>
-          )}
         </View>
       ))}
     </View>

@@ -1,11 +1,22 @@
 import { supabase } from "./supabase";
 import type { SurveyQuestion, SurveyResponse } from "../types/survey";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string | undefined) {
+  return typeof value === "string" && UUID_REGEX.test(value);
+}
+
+function normalizeQuestionOptions(options: SurveyQuestion["options"]) {
+  return options ?? [];
+}
+
 export async function getQuestions(tripId: string) {
   const { data, error } = await (supabase as any)
     .from("survey_questions")
     .select("*")
     .eq("trip_id", tripId)
+    .neq("type", "date_range")
     .order("order_index", { ascending: true });
 
   if (error) {
@@ -17,33 +28,54 @@ export async function getQuestions(tripId: string) {
 
 export async function saveQuestions(tripId: string, questions: Omit<SurveyQuestion, "created_at">[]) {
   // First, get all existing questions to know what to delete
-  const { data: existing } = await (supabase as any)
+  const { data: existing, error: existingError } = await (supabase as any)
     .from("survey_questions")
     .select("id")
     .eq("trip_id", tripId);
 
-  const incomingIds = questions.map((q) => q.id).filter((id) => id);
+  if (existingError) throw existingError;
+
+  const incomingIds = questions.map((q) => q.id).filter(isUuid);
 
   if (existing) {
     const toDelete = existing.map((e: any) => e.id).filter((id: string) => !incomingIds.includes(id));
     if (toDelete.length > 0) {
-      await (supabase as any).from("survey_questions").delete().in("id", toDelete);
+      const { error } = await (supabase as any).from("survey_questions").delete().in("id", toDelete);
+      if (error) throw error;
     }
   }
 
   // Insert or Update the current questions
   if (questions.length > 0) {
-    const { error } = await (supabase as any).from("survey_questions").upsert(
-      questions.map((q) => ({
-        id: q.id,
-        trip_id: tripId,
-        type: q.type,
-        question: q.question,
-        options: q.options,
-        order_index: q.order_index,
-      })),
-    );
-    if (error) throw error;
+    const existingQuestions = questions.filter((q) => isUuid(q.id));
+    const newQuestions = questions.filter((q) => !isUuid(q.id));
+
+    if (existingQuestions.length > 0) {
+      const { error } = await (supabase as any).from("survey_questions").upsert(
+        existingQuestions.map((q) => ({
+          id: q.id,
+          trip_id: tripId,
+          type: q.type,
+          question: q.question,
+          options: normalizeQuestionOptions(q.options),
+          order_index: q.order_index,
+        })),
+      );
+      if (error) throw error;
+    }
+
+    if (newQuestions.length > 0) {
+      const { error } = await (supabase as any).from("survey_questions").insert(
+        newQuestions.map((q) => ({
+          trip_id: tripId,
+          type: q.type,
+          question: q.question,
+          options: normalizeQuestionOptions(q.options),
+          order_index: q.order_index,
+        })),
+      );
+      if (error) throw error;
+    }
   }
 }
 

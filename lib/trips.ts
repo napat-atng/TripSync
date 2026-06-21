@@ -79,11 +79,22 @@ export async function setConfirmedDate(tripId: string, date: string) {
 }
 
 export async function getTripByInviteToken(token: string) {
-  const { data, error } = await (supabase as any)
-    .from("trips")
-    .select("*")
-    .eq("invite_token", token)
-    .single();
+  const { data, error } = await (supabase as any).rpc("get_trip_by_invite_token", {
+    target_token: token.trim(),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data as Trip;
+}
+
+export async function joinTripByInviteToken(token: string, displayName: string | null) {
+  const { data, error } = await (supabase as any).rpc("join_trip_by_invite_token", {
+    target_token: token.trim(),
+    target_display_name: displayName,
+  });
 
   if (error) {
     throw error;

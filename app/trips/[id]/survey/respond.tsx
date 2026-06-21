@@ -9,16 +9,50 @@ import { getMyMemberId } from "../../../../lib/members";
 import { useAuth } from "../../../../hooks/useAuth";
 import type { SurveyQuestion, SurveyResponse } from "../../../../types/survey";
 
+function getEmptyAnswer(question: SurveyQuestion) {
+  if (question.type === "multiple_choice") return [];
+  return "";
+}
+
+function getRequiredRule(question: SurveyQuestion) {
+  const message = "กรุณาตอบคำถามนี้";
+
+  if (question.type === "multiple_choice") {
+    return {
+      validate: (value: unknown) => (Array.isArray(value) && value.length > 0) || message,
+    };
+  }
+
+  return { required: message };
+}
+
+function normalizeExistingAnswer(question: SurveyQuestion, answer: any) {
+  if (answer === undefined || answer === null) return getEmptyAnswer(question);
+
+  if (question.type === "multiple_choice") {
+    const validOptions = Array.isArray(question.options) ? question.options : [];
+    const selectedOptions = Array.isArray(answer) ? answer : [];
+    return selectedOptions.filter((option) => validOptions.includes(option));
+  }
+
+  return answer;
+}
+
 export default function SurveyRespondScreen() {
   const { id: tripId } = useLocalSearchParams<{ id: string }>();
   const user = useAuth((state) => state.user);
-  
+
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
   const [existingResponses, setExistingResponses] = useState<SurveyResponse[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { control, handleSubmit, formState: { isSubmitting } } = useForm();
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm();
 
   useEffect(() => {
     loadData();
@@ -34,6 +68,21 @@ export default function SurveyRespondScreen() {
         setMemberId(mId);
         const resps = await getMyResponses(mId, tripId!);
         setExistingResponses(resps || []);
+
+        reset(
+          (qs || []).reduce<Record<string, any>>((defaults, q) => {
+            const existing = (resps || []).find((resp) => resp.question_id === q.id);
+            defaults[q.id] = normalizeExistingAnswer(q, existing?.answer);
+            return defaults;
+          }, {}),
+        );
+      } else {
+        reset(
+          (qs || []).reduce<Record<string, any>>((defaults, q) => {
+            defaults[q.id] = getEmptyAnswer(q);
+            return defaults;
+          }, {}),
+        );
       }
     } catch (error) {
       Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลแบบสอบถามได้");
@@ -49,17 +98,16 @@ export default function SurveyRespondScreen() {
     }
 
     try {
-      // Map form data to SurveyResponse payload
       const responsesToSubmit = Object.entries(data).map(([questionId, answer]) => ({
         question_id: questionId,
-        answer: answer,
+        answer,
       }));
 
       await submitResponses(memberId, tripId!, responsesToSubmit);
-      Alert.alert("ส่งคำตอบเรียบร้อย", "ขอบคุณที่ตอบคำถาม!");
+      Alert.alert("บันทึกคำตอบเรียบร้อย", "คุณสามารถกลับมาแก้ไขคำตอบได้ภายหลัง");
       router.back();
     } catch (error) {
-      Alert.alert("ข้อผิดพลาด", "ไม่สามารถส่งคำตอบได้");
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถบันทึกคำตอบได้");
     }
   };
 
@@ -74,68 +122,41 @@ export default function SurveyRespondScreen() {
   if (questions.length === 0) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-50 p-6">
-        <Stack.Screen options={{ title: "Survey" }} />
+        <Stack.Screen options={{ title: "แบบสอบถาม" }} />
         <AppText className="text-center text-slate-500">
-          The trip leader hasn't created a survey yet.
+          หัวหน้าทริปยังไม่ได้สร้างแบบสอบถาม
         </AppText>
       </View>
     );
   }
 
-  // Read-only Mode
-  if (existingResponses.length > 0) {
-    return (
-      <ScrollView className="flex-1 bg-slate-50 p-6">
-        <Stack.Screen options={{ title: "คำตอบของคุณ" }} />
-        <View className="mb-6 rounded-xl bg-teal-50 p-4 border border-teal-200">
-          <AppText className="text-teal-800 font-semibold text-center">
-            คุณส่งคำตอบแบบสอบถามแล้ว!
-          </AppText>
-        </View>
-
-        {questions.map((q) => {
-          const resp = existingResponses.find(r => r.question_id === q.id);
-          return (
-            <View key={q.id} className="mb-6 rounded-xl bg-white p-5 border border-slate-200 shadow-sm">
-              <AppText className="mb-3 text-lg font-bold text-slate-900">{q.question}</AppText>
-              <AppText className="text-base text-slate-700">
-                {resp ? JSON.stringify(resp.answer) : "ยังไม่ได้ตอบคำถามนี้"}
-              </AppText>
-            </View>
-          );
-        })}
-      </ScrollView>
-    );
-  }
-
-  // Edit Mode
   return (
     <View className="flex-1 bg-slate-50">
       <Stack.Screen options={{ title: "แบบสอบถาม" }} />
       <ScrollView className="flex-1 p-6" keyboardShouldPersistTaps="handled">
         <AppText className="mb-6 text-slate-500">
-          กรุณาตอบคำถามต่อไปนี้ เพื่อช่วยวางแผนทริปกัน
+          {existingResponses.length > 0
+            ? "คุณเคยตอบแบบสอบถามนี้แล้ว แก้ไขคำตอบแล้วกดบันทึกได้เลย"
+            : "กรุณาตอบคำถามต่อไปนี้ เพื่อช่วยวางแผนทริปกัน"}
         </AppText>
 
         {questions.map((q) => (
           <View key={q.id} className="mb-6 rounded-xl bg-white p-5 border border-slate-200 shadow-sm">
             <AppText className="mb-3 text-base font-bold text-slate-900">{q.question}</AppText>
-            
+
             <Controller
               control={control}
               name={q.id}
-              defaultValue=""
-              rules={{ required: "กรุณาตอบคำถามนี้" }}
+              defaultValue={getEmptyAnswer(q)}
+              rules={getRequiredRule(q)}
               render={({ field: { onChange, value }, fieldState: { error } }) => {
-                
-                // Text Response
                 if (q.type === "text") {
                   return (
                     <View>
                       <TextInput
                         className="h-12 rounded-lg border border-slate-300 px-4 text-base bg-slate-50"
                         placeholder="คำตอบของคุณ"
-                        value={value}
+                        value={String(value ?? "")}
                         onChangeText={onChange}
                       />
                       {error && <AppText className="mt-1 text-sm text-red-500">{error.message}</AppText>}
@@ -143,48 +164,50 @@ export default function SurveyRespondScreen() {
                   );
                 }
 
-                // Multiple Choice (simplified for UI)
                 if (q.type === "multiple_choice") {
                   const opts = Array.isArray(q.options) ? q.options : [];
                   const selectedArr = Array.isArray(value) ? value : [];
-                  
+
                   return (
-                    <View className="flex-row flex-wrap">
-                      {opts.map((opt: string) => {
-                        const isSelected = selectedArr.includes(opt);
-                        return (
-                          <Pressable
-                            key={opt}
-                            className={`mr-2 mb-2 rounded-full px-4 py-2 border ${
-                              isSelected ? "bg-teal-600 border-teal-600" : "bg-slate-50 border-slate-300"
-                            }`}
-                            onPress={() => {
-                              if (isSelected) {
-                                onChange(selectedArr.filter(item => item !== opt));
-                              } else {
-                                onChange([...selectedArr, opt]);
-                              }
-                            }}
-                          >
-                            <AppText className={`font-medium ${isSelected ? "text-white" : "text-slate-700"}`}>
-                              {opt}
-                            </AppText>
-                          </Pressable>
-                        );
-                      })}
+                    <View>
+                      <View className="flex-row flex-wrap">
+                        {opts.map((opt: string) => {
+                          const isSelected = selectedArr.includes(opt);
+                          return (
+                            <Pressable
+                              key={opt}
+                              className={`mr-2 mb-2 rounded-full px-4 py-2 border ${
+                                isSelected ? "bg-teal-600 border-teal-600" : "bg-slate-50 border-slate-300"
+                              }`}
+                              onPress={() => {
+                                if (isSelected) {
+                                  onChange(selectedArr.filter((item: string) => item !== opt));
+                                } else {
+                                  onChange([...selectedArr, opt]);
+                                }
+                              }}
+                            >
+                              <AppText className={`font-medium ${isSelected ? "text-white" : "text-slate-700"}`}>
+                                {opt}
+                              </AppText>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                      {error && <AppText className="mt-1 text-sm text-red-500">{error.message}</AppText>}
                     </View>
                   );
                 }
 
-                // Fallback for others (Date Range, Budget) for MVP
                 return (
                   <View>
                     <TextInput
                       className="h-12 rounded-lg border border-slate-300 px-4 text-base bg-slate-50"
                       placeholder={`Enter ${q.type.replace("_", " ")}`}
-                      value={value}
+                      value={String(value ?? "")}
                       onChangeText={onChange}
                     />
+                    {error && <AppText className="mt-1 text-sm text-red-500">{error.message}</AppText>}
                   </View>
                 );
               }}
@@ -202,7 +225,7 @@ export default function SurveyRespondScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <AppText className="text-lg font-semibold text-white">ส่งคำตอบ</AppText>
+            <AppText className="text-lg font-semibold text-white">บันทึกคำตอบ</AppText>
           )}
         </Pressable>
       </View>

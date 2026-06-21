@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Alert, Pressable, View, FlatList, ActivityIndicator } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Pressable, View, FlatList, ActivityIndicator, TextInput } from "react-native";
 import { router } from "expo-router";
 
 import { AppText } from "../../components/AppText";
@@ -11,6 +11,7 @@ export default function HomeScreen() {
   const { trips, setTrips, isLoading, setIsLoading } = useTripStore();
   const user = useAuth((state) => state.user);
   const signOut = useAuth((state) => state.signOut);
+  const [inviteLink, setInviteLink] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -42,6 +43,30 @@ export default function HomeScreen() {
     }
   };
 
+  const extractInviteToken = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+
+    const joinMatch = trimmed.match(/(?:^|\/)join\/([^/?#\s]+)/i);
+    if (joinMatch?.[1]) {
+      return decodeURIComponent(joinMatch[1]);
+    }
+
+    return trimmed.replace(/^["']|["']$/g, "");
+  };
+
+  const handleOpenInvite = () => {
+    const token = extractInviteToken(inviteLink);
+
+    if (!token) {
+      Alert.alert("กรุณากรอกลิงก์เชิญ", "วางลิงก์เชิญหรือรหัสเชิญที่ได้รับจากเพื่อน");
+      return;
+    }
+
+    router.push(`/join/${token}` as any);
+    setInviteLink("");
+  };
+
   return (
     <View className="flex-1 bg-slate-50">
       <View className="flex-row items-center justify-between px-6 py-4">
@@ -60,6 +85,31 @@ export default function HomeScreen() {
           data={trips}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+          ListHeaderComponent={
+            <View className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <AppText className="mb-2 text-base font-bold text-slate-900">เข้าร่วมทริปจากลิงก์เชิญ</AppText>
+              <AppText className="mb-3 text-sm text-slate-500">
+                วางลิงก์ที่ได้รับจากเพื่อน หรือใส่รหัสเชิญโดยตรง
+              </AppText>
+              <TextInput
+                className="mb-3 h-12 rounded-lg border border-slate-300 bg-slate-50 px-4 text-base text-slate-900"
+                placeholder="tripsync://join/..."
+                value={inviteLink}
+                onChangeText={setInviteLink}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                returnKeyType="go"
+                onSubmitEditing={handleOpenInvite}
+              />
+              <Pressable
+                className="h-12 items-center justify-center rounded-lg bg-teal-600"
+                onPress={handleOpenInvite}
+              >
+                <AppText className="font-semibold text-white">เข้าร่วมทริป</AppText>
+              </Pressable>
+            </View>
+          }
           ListEmptyComponent={
             <View className="mt-20 items-center">
               <AppText className="text-center text-lg font-semibold text-slate-700">

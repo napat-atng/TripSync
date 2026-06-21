@@ -4,8 +4,8 @@ import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { AppText } from "../../components/AppText";
-import { getTripByInviteToken } from "../../lib/trips";
-import { joinTripAsUser, joinTripAsGuest } from "../../lib/members";
+import { getTripByInviteToken, joinTripByInviteToken } from "../../lib/trips";
+import { joinTripAsGuest } from "../../lib/members";
 import { useAuth } from "../../hooks/useAuth";
 import type { Trip } from "../../types/trip";
 
@@ -32,13 +32,12 @@ export default function JoinTripScreen() {
 
   const loadTrip = async () => {
     try {
-      const fetchedTrip = await getTripByInviteToken(token!);
-      setTrip(fetchedTrip);
-
       // If user is logged in, auto-join
       if (user) {
-        await handleJoinAsUser(fetchedTrip);
+        await handleJoinAsUser();
       } else {
+        const fetchedTrip = await getTripByInviteToken(token!);
+        setTrip(fetchedTrip);
         setIsLoading(false);
       }
     } catch (error) {
@@ -47,21 +46,22 @@ export default function JoinTripScreen() {
     }
   };
 
-  const handleJoinAsUser = async (targetTrip: Trip) => {
+  const handleJoinAsUser = async () => {
     try {
       const defaultName = user?.email?.split("@")[0] || "Member";
-      await joinTripAsUser(targetTrip.id, user!.id, defaultName);
+      const joinedTrip = await joinTripByInviteToken(token!, defaultName);
+      setTrip(joinedTrip);
 
       // Trigger 1: notify leader someone joined (only when push is enabled)
       if (PUSH_NOTIFICATIONS_ENABLED) {
         try {
-          const leaderUserId = await getLeaderUserId(targetTrip.id);
+          const leaderUserId = await getLeaderUserId(joinedTrip.id);
           if (leaderUserId && leaderUserId !== user!.id) {
             await sendPushNotification(
               [leaderUserId],
               `${defaultName} joined your trip!`,
-              `${defaultName} has joined "${targetTrip.name}"`,
-              { tripId: targetTrip.id },
+              `${defaultName} has joined "${joinedTrip.name}"`,
+              { tripId: joinedTrip.id },
             );
           }
         } catch {
@@ -69,7 +69,7 @@ export default function JoinTripScreen() {
         }
       }
 
-      router.replace(`/trips/${targetTrip.id}/dashboard` as any);
+      router.replace(`/trips/${joinedTrip.id}/dashboard` as any);
     } catch (error) {
       Alert.alert("เข้าร่วมไม่สำเร็จ", "ไม่สามารถเข้าร่วมทริปนี้ได้ในขณะนี้");
       setIsLoading(false);

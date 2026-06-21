@@ -32,13 +32,7 @@ export interface TextResult {
   answers: { member_id: string; display_name: string | null; answer: string }[];
 }
 
-export interface DateRangeResult {
-  type: "date_range";
-  question: SurveyQuestion;
-  answers: { member_id: string; display_name: string | null; start: string | null; end: string | null }[];
-}
-
-export type QuestionResult = MultipleChoiceResult | BudgetRangeResult | TextResult | DateRangeResult;
+export type QuestionResult = MultipleChoiceResult | BudgetRangeResult | TextResult;
 
 export interface SurveyAnalytics {
   members: MemberResponseStatus[];
@@ -125,19 +119,6 @@ export async function getSurveyAnalytics(tripId: string): Promise<SurveyAnalytic
         max: values.length > 0 ? Math.max(...values) : null,
         median: median(values),
         values,
-      };
-    }
-
-    if (q.type === "date_range") {
-      return {
-        type: "date_range",
-        question: q,
-        answers: answersForQuestion.map((r: any) => ({
-          member_id: r.member_id,
-          display_name: r.trip_members?.display_name ?? null,
-          start: r.answer?.start ?? null,
-          end: r.answer?.end ?? null,
-        })),
       };
     }
 

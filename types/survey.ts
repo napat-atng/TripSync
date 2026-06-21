@@ -1,4 +1,4 @@
-export type SurveyQuestionType = "date_range" | "multiple_choice" | "budget_range" | "text";
+export type SurveyQuestionType = "multiple_choice" | "budget_range" | "text";
 
 export interface SurveyQuestion {
   id: string;

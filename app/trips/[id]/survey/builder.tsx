@@ -1,11 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { View, Pressable, ActivityIndicator, Alert, TextInput, ScrollView, Modal } from "react-native";
+import { View, Pressable, ActivityIndicator, Alert, TextInput, Modal } from "react-native";
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from "react-native-draggable-flatlist";
 
 import { AppText } from "../../../../components/AppText";
 import { getQuestions, saveQuestions } from "../../../../lib/survey";
 import type { SurveyQuestion, SurveyQuestionType } from "../../../../types/survey";
+
+function getQuestionOptions(question: SurveyQuestion) {
+  return Array.isArray(question.options) ? (question.options as string[]) : [];
+}
+
+function normalizeMultipleChoiceOptions(options: string[]) {
+  const seen = new Set<string>();
+
+  return options
+    .map((option) => option.trim())
+    .filter((option) => {
+      if (!option || seen.has(option)) return false;
+      seen.add(option);
+      return true;
+    });
+}
 
 export default function SurveyBuilderScreen() {
   const { id: tripId } = useLocalSearchParams<{ id: string }>();
@@ -31,10 +47,27 @@ export default function SurveyBuilderScreen() {
   };
 
   const handleSave = async () => {
+    const normalizedQuestions = questions.map((q) => {
+      if (q.type !== "multiple_choice") return q;
+
+      return {
+        ...q,
+        options: normalizeMultipleChoiceOptions(getQuestionOptions(q)),
+      };
+    });
+
+    const invalidMultipleChoice = normalizedQuestions.find(
+      (q) => q.type === "multiple_choice" && getQuestionOptions(q).length === 0,
+    );
+
+    if (invalidMultipleChoice) {
+      Alert.alert("ยังไม่มีตัวเลือก", "คำถามแบบตัวเลือกต้องมีอย่างน้อย 1 ตัวเลือก");
+      return;
+    }
+
     try {
       setIsSaving(true);
-      // Update order_index before saving
-      const payload = questions.map((q, index) => ({
+      const payload = normalizedQuestions.map((q, index) => ({
         ...q,
         order_index: index,
       }));
@@ -50,11 +83,11 @@ export default function SurveyBuilderScreen() {
 
   const addNewQuestion = (type: SurveyQuestionType) => {
     const newQ: SurveyQuestion = {
-      id: Math.random().toString(36).substring(7), // Temp ID for new items
+      id: Math.random().toString(36).substring(7),
       trip_id: tripId!,
       type,
       question: "คำถามใหม่",
-      options: type === "multiple_choice" ? ["Option 1", "Option 2"] : type === "budget_range" ? { min: 0, max: 1000, step: 100 } : null,
+      options: type === "multiple_choice" ? [] : type === "budget_range" ? { min: 0, max: 1000, step: 100 } : [],
       order_index: questions.length,
       created_at: new Date().toISOString(),
     };
@@ -70,7 +103,40 @@ export default function SurveyBuilderScreen() {
     setQuestions(questions.map((q) => (q.id === id ? { ...q, question: text } : q)));
   };
 
+  const updateQuestionOptions = (id: string, options: string[]) => {
+    setQuestions(questions.map((q) => (q.id === id ? { ...q, options } : q)));
+  };
+
+  const updateQuestionOption = (id: string, optionIndex: number, text: string) => {
+    const question = questions.find((q) => q.id === id);
+    if (!question) return;
+
+    const options = [...getQuestionOptions(question)];
+    options[optionIndex] = text;
+    updateQuestionOptions(id, options);
+  };
+
+  const addQuestionOption = (id: string) => {
+    const question = questions.find((q) => q.id === id);
+    if (!question) return;
+
+    updateQuestionOptions(id, [...getQuestionOptions(question), ""]);
+  };
+
+  const deleteQuestionOption = (id: string, optionIndex: number) => {
+    const question = questions.find((q) => q.id === id);
+    if (!question) return;
+
+    updateQuestionOptions(
+      id,
+      getQuestionOptions(question).filter((_, index) => index !== optionIndex),
+    );
+  };
+
   const renderItem = ({ item, drag, isActive }: RenderItemParams<SurveyQuestion>) => {
+    const options = getQuestionOptions(item);
+    const visibleOptions = options.length > 0 ? options : [""];
+
     return (
       <ScaleDecorator>
         <View className={`mb-3 flex-row rounded-xl border p-4 ${isActive ? "bg-teal-50 border-teal-200" : "bg-white border-slate-200"}`}>
@@ -92,10 +158,33 @@ export default function SurveyBuilderScreen() {
               onChangeText={(text) => updateQuestionText(item.id, text)}
               placeholder="พิมพ์คำถามของคุณ"
             />
+
             {item.type === "multiple_choice" && (
-              <AppText className="mt-2 text-xs text-slate-500">
-                ตัวเลือก: {item.options?.join(", ")} (แก้ไขรายละเอียดเพิ่มเติมผ่านเว็บไซต์)
-              </AppText>
+              <View className="mt-4">
+                <AppText className="mb-2 text-xs font-semibold text-slate-600">ตัวเลือก</AppText>
+                {visibleOptions.map((option, index) => (
+                  <View key={`${item.id}-option-${index}`} className="mb-2 flex-row items-center">
+                    <TextInput
+                      className="mr-2 h-10 flex-1 rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm text-slate-900"
+                      value={option}
+                      onChangeText={(text) => updateQuestionOption(item.id, index, text)}
+                      placeholder={`ตัวเลือก ${index + 1}`}
+                    />
+                    <Pressable
+                      className="h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-red-50"
+                      onPress={() => deleteQuestionOption(item.id, index)}
+                    >
+                      <AppText className="font-semibold text-red-500">ลบ</AppText>
+                    </Pressable>
+                  </View>
+                ))}
+                <Pressable
+                  className="mt-1 h-10 items-center justify-center rounded-lg border border-teal-600 bg-teal-50"
+                  onPress={() => addQuestionOption(item.id)}
+                >
+                  <AppText className="font-semibold text-teal-700">+ เพิ่มตัวเลือก</AppText>
+                </Pressable>
+              </View>
             )}
           </View>
         </View>
@@ -113,8 +202,8 @@ export default function SurveyBuilderScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "Survey Builder" }} />
-      
+      <Stack.Screen options={{ title: "แก้ไขแบบสอบถาม" }} />
+
       <View className="flex-1 px-4 pt-4">
         <DraggableFlatList
           data={questions}
@@ -154,7 +243,7 @@ export default function SurveyBuilderScreen() {
                 <AppText className="text-slate-500">ปิด</AppText>
               </Pressable>
             </View>
-            <View className="space-y-3">
+            <View>
               {[
                 { type: "text", label: "ตอบข้อความ", desc: "กรอกข้อความเสรี" },
                 { type: "date_range", label: "ช่วงวันที่", desc: "เลือกวันเริ่มต้นและวันสิ้นสุด" },
