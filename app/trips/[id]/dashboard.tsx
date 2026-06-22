@@ -32,6 +32,7 @@ function formatDate(iso: string) {
 export default function TripDashboardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const trips = useTripStore((state) => state.trips);
+  const removeTrip = useTripStore((state) => state.removeTrip);
   const user = useAuth((s) => s.user);
 
   const [isInviteSheetVisible, setIsInviteSheetVisible] = useState(false);
@@ -41,12 +42,16 @@ export default function TripDashboardScreen() {
   const [bestDates, setBestDates] = useState<DayAvailability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingDate, setIsSettingDate] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [myRole, setMyRole] = useState<string | null>(null);
 
   const trip = trips.find((t) => t.id === id);
 
-  const isLeader = trip?.trip_members?.some(
-    (m) => m.user_id === user?.id && m.role === "leader",
-  );
+  // trip_members can be nested as array from getUserTrips join
+  const tripMembers = (trip as any)?.trip_members ?? [];
+  const isLeader =
+    myRole === "leader" ||
+    tripMembers.some((m: any) => m.user_id === user?.id && m.role === "leader");
 
   const prevRespondedCount = useRef(0);
 
@@ -62,6 +67,16 @@ export default function TripDashboardScreen() {
       setMyMemberId(mid ?? null);
       setAnalytics(surveyData);
       setBestDates(dates);
+
+      // Fetch role directly from DB — don’t rely on store join which may be stale
+      if (mid) {
+        const { data: memberRow } = await (supabase as any)
+          .from("trip_members")
+          .select("role")
+          .eq("id", mid)
+          .single();
+        if (memberRow?.role) setMyRole(memberRow.role);
+      }
 
       // Trigger 2: notify leader when all members have responded
       // Wrapped in its own try/catch so notification failure never breaks the dashboard load
@@ -98,34 +113,46 @@ export default function TripDashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!trip) {
+      if (!trip && !isDeleting) {
         router.replace("/(tabs)/home");
         return;
       }
-      load();
-    }, [trip, load]),
+      if (trip) load();
+    }, [trip, isDeleting, load]),
   );
 
   const handleDeleteTrip = () => {
+    if (!trip || !id) return;
     Alert.alert(
       "ลบทริป",
-      `คุณแน่ใจว่าต้องการลบทริป "${trip?.name}" ใช่ไหม? ครั้งนี้จะไม่สามารถเนินการนี้ได้`,
+      `คุณแน่ใจว่าต้องการลบทริป "${trip.name}" ใช่ไหม? เมื่อลบแล้วจะไม่สามารถกู้คืนได้`,
       [
         { text: "ยกเลิก", style: "cancel" },
         {
           text: "ลบทริป",
           style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteTrip(id!);
-              router.replace("/(tabs)/home");
-            } catch {
-              Alert.alert("ข้อผิดพลาด", "ไม่สามารถลบทริปได้ในขณะนี้");
-            }
-          },
+          onPress: () => executeDeletion(id),
         },
       ],
     );
+  };
+
+  const executeDeletion = async (tripId: string) => {
+    setIsDeleting(true);
+    try {
+      await deleteTrip(tripId);
+      // Remove from store AFTER successful DB delete
+      removeTrip(tripId);
+      // Use setTimeout to let store update propagate before navigating
+      // This prevents useFocusEffect from seeing trip=undefined mid-deletion
+      setTimeout(() => {
+        router.replace("/(tabs)/home");
+      }, 50);
+    } catch (err: any) {
+      setIsDeleting(false);
+      const message = err?.message ?? JSON.stringify(err) ?? "ไม่ทราบสาเหตุ";
+      Alert.alert("ไม่สามารถลบทริปได้", message);
+    }
   };
 
   const handleRemind = async () => {
@@ -186,7 +213,16 @@ export default function TripDashboardScreen() {
     }
   };
 
-  if (!trip || isLoading) {
+  // Don't block rendering when deleting — show spinner overlay instead
+  if (isLoading && !isDeleting) {
+    return (
+      <View className="flex-1 items-center justify-center bg-slate-50">
+        <ActivityIndicator size="large" color="#0f766e" />
+      </View>
+    );
+  }
+
+  if (!trip) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-50">
         <ActivityIndicator size="large" color="#0f766e" />
@@ -208,11 +244,18 @@ export default function TripDashboardScreen() {
       <Stack.Screen
         options={{
           title: trip.name,
-          headerBackTitle: "หน้าแรก",
           headerRight: isLeader
             ? () => (
-                <Pressable onPress={handleDeleteTrip} className="mr-2">
-                  <AppText className="text-sm font-semibold text-red-500">ลบ</AppText>
+                <Pressable
+                  onPress={handleDeleteTrip}
+                  className="mr-2"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <ActivityIndicator size="small" color="#ef4444" />
+                  ) : (
+                    <AppText className="text-sm font-semibold text-red-500">ลบ</AppText>
+                  )}
                 </Pressable>
               )
             : undefined,

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, ScrollView, ActivityIndicator, Alert, Pressable, TextInput } from "react-native";
-import { useLocalSearchParams, Stack, router } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 
 import { AppText } from "../../../../components/AppText";
@@ -122,7 +122,6 @@ export default function SurveyRespondScreen() {
   if (questions.length === 0) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-50 p-6">
-        <Stack.Screen options={{ title: "แบบสอบถาม" }} />
         <AppText className="text-center text-slate-500">
           หัวหน้าทริปยังไม่ได้สร้างแบบสอบถาม
         </AppText>
@@ -132,7 +131,6 @@ export default function SurveyRespondScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "แบบสอบถาม" }} />
       <ScrollView className="flex-1 p-6" keyboardShouldPersistTaps="handled">
         <AppText className="mb-6 text-slate-500">
           {existingResponses.length > 0

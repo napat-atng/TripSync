@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ActivityIndicator, AppState, View } from "react-native";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as ExpoNotifications from "expo-notifications";
 
 import "../global.css";
@@ -110,7 +110,29 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Slot />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: "#0f172a" },
+          headerTintColor: "#ffffff",
+          headerTitleStyle: { fontWeight: "700", fontSize: 17 },
+          headerBackTitle: "กลับ",
+          headerBackButtonDisplayMode: "minimal",
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ title: "โปรไฟล์", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="join/[token]" options={{ title: "เข้าร่วมทริป", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="trips/create" options={{ title: "สร้างทริปใหม่", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="trips/[id]/dashboard" options={{ headerBackTitle: "หน้าแรก" }} />
+        <Stack.Screen name="trips/[id]/availability" options={{ title: "วันว่างของฉัน", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="trips/[id]/suggest" options={{ title: "AI แนะนำจุดหมาย", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="trips/[id]/expenses" options={{ title: "ค่าใช้จ่าย", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="trips/[id]/expenses/add" options={{ title: "เพิ่มค่าใช้จ่าย", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="trips/[id]/expenses/settle" options={{ title: "เคลียร์หนี้", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="trips/[id]/survey/builder" options={{ title: "แก้ไขแบบสอบถาม", headerBackTitle: "กลับ" }} />
+        <Stack.Screen name="trips/[id]/survey/respond" options={{ title: "แบบสอบถาม", headerBackTitle: "กลับ" }} />
+      </Stack>
     </GestureHandlerRootView>
   );
 }

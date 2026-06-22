@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Pressable, ActivityIndicator, Alert, TextInput, Modal } from "react-native";
-import { useLocalSearchParams, Stack, router } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from "react-native-draggable-flatlist";
 
 import { AppText } from "../../../../components/AppText";
@@ -202,7 +202,6 @@ export default function SurveyBuilderScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "แก้ไขแบบสอบถาม" }} />
 
       <View className="flex-1 px-4 pt-4">
         <DraggableFlatList

@@ -8,7 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 
 import { AppText } from "../../../../components/AppText";
 import { getMembersByTrip } from "../../../../lib/members";
@@ -160,7 +160,6 @@ export default function AddExpenseScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "เพิ่มค่าใช้จ่าย" }} />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         {/* Title */}

@@ -7,7 +7,7 @@ import {
   Alert,
   Modal,
 } from "react-native";
-import { Stack, router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import { AppText } from "../../../../components/AppText";
 import { getExpensesByTrip, getTripTotalSpend } from "../../../../lib/expenses";
@@ -67,7 +67,6 @@ export default function ExpenseListScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "ค่าใช้จ่าย" }} />
 
       {/* Total spend card */}
       <View className="px-5 pt-5">

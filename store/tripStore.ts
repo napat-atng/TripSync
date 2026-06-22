@@ -9,6 +9,7 @@ type TripState = {
   setTrips: (trips: Trip[]) => void;
   setCurrentTrip: (trip: Trip | null) => void;
   setIsLoading: (isLoading: boolean) => void;
+  removeTrip: (tripId: string) => void;
 };
 
 export const useTripStore = create<TripState>((set) => ({
@@ -18,4 +19,5 @@ export const useTripStore = create<TripState>((set) => ({
   setTrips: (trips) => set({ trips }),
   setCurrentTrip: (currentTrip) => set({ currentTrip }),
   setIsLoading: (isLoading) => set({ isLoading }),
+  removeTrip: (tripId) => set((state) => ({ trips: state.trips.filter((t) => t.id !== tripId) })),
 }));

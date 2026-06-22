@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { View, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
-import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import { AppText } from "../../../../components/AppText";
 import { getSettlementSummary, markDebtAsSettled } from "../../../../lib/expenses";
@@ -88,7 +88,6 @@ export default function SettleUpScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: "เคลียร์หนี้" }} />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         {/* Outstanding debts */}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, Pressable, TextInput, View } from "react-native";
-import { Stack } from "expo-router";
+import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 
 import { AppText } from "../components/AppText";
@@ -89,7 +89,6 @@ export default function ProfileScreen() {
 
   return (
     <View className="flex-1 bg-slate-50 px-6 pt-8">
-      <Stack.Screen options={{ title: "โปรไฟล์" }} />
 
       <View className="items-center">
         <Pressable
