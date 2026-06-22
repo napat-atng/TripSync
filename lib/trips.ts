@@ -78,6 +78,15 @@ export async function setConfirmedDate(tripId: string, date: string) {
   return data as Trip;
 }
 
+export async function deleteTrip(tripId: string) {
+  const { error } = await (supabase as any)
+    .from("trips")
+    .delete()
+    .eq("id", tripId);
+
+  if (error) throw error;
+}
+
 export async function getTripByInviteToken(token: string) {
   const { data, error } = await (supabase as any).rpc("get_trip_by_invite_token", {
     target_token: token.trim(),

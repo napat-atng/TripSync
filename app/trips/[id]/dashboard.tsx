@@ -11,7 +11,7 @@ import { VoteSection } from "../../../components/VoteSection";
 import { useTripStore } from "../../../store/tripStore";
 import { useAuth } from "../../../hooks/useAuth";
 import { getMyMemberId } from "../../../lib/members";
-import { setConfirmedDate } from "../../../lib/trips";
+import { setConfirmedDate, deleteTrip } from "../../../lib/trips";
 import { getSurveyAnalytics, type SurveyAnalytics } from "../../../lib/survey-analytics";
 import { getBestDates } from "../../../lib/availability";
 import { sendPushNotification, getLeaderUserId } from "../../../lib/notifications";
@@ -106,6 +106,28 @@ export default function TripDashboardScreen() {
     }, [trip, load]),
   );
 
+  const handleDeleteTrip = () => {
+    Alert.alert(
+      "ลบทริป",
+      `คุณแน่ใจว่าต้องการลบทริป "${trip?.name}" ใช่ไหม? ครั้งนี้จะไม่สามารถเนินการนี้ได้`,
+      [
+        { text: "ยกเลิก", style: "cancel" },
+        {
+          text: "ลบทริป",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteTrip(id!);
+              router.replace("/(tabs)/home");
+            } catch {
+              Alert.alert("ข้อผิดพลาด", "ไม่สามารถลบทริปได้ในขณะนี้");
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const handleRemind = async () => {
     if (!analytics || !id) return;
     const pending = analytics.members.filter((m) => !m.responded);
@@ -183,7 +205,19 @@ export default function TripDashboardScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Stack.Screen options={{ title: trip.name, headerBackTitle: "หน้าแรก" }} />
+      <Stack.Screen
+        options={{
+          title: trip.name,
+          headerBackTitle: "หน้าแรก",
+          headerRight: isLeader
+            ? () => (
+                <Pressable onPress={handleDeleteTrip} className="mr-2">
+                  <AppText className="text-sm font-semibold text-red-500">ลบ</AppText>
+                </Pressable>
+              )
+            : undefined,
+        }}
+      />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         <AppText className="text-2xl font-bold text-slate-900">{trip.name}</AppText>

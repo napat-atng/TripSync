@@ -246,9 +246,8 @@ export default function SurveyBuilderScreen() {
             <View>
               {[
                 { type: "text", label: "ตอบข้อความ", desc: "กรอกข้อความเสรี" },
-                { type: "date_range", label: "ช่วงวันที่", desc: "เลือกวันเริ่มต้นและวันสิ้นสุด" },
                 { type: "multiple_choice", label: "ตัวเลือก", desc: "เลือกจากตัวเลือกที่กำหนด" },
-                { type: "budget_range", label: "ช่วงงบประมาณ", desc: "เลือกงบขั้นต่ำและขั้นสูง" },
+                { type: "budget_range", label: "ช่วงงบประมาณ", desc: "กรอกงบประมาณต่อคน (บาท)" },
               ].map((opt) => (
                 <Pressable
                   key={opt.type}

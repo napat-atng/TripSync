@@ -199,11 +199,27 @@ export default function SurveyRespondScreen() {
                   );
                 }
 
+                if (q.type === "budget_range") {
+                  return (
+                    <View>
+                      <TextInput
+                        className="h-12 rounded-lg border border-slate-300 px-4 text-base bg-slate-50"
+                        placeholder="งบประมาณต่อคน (บาท)"
+                        value={value ? String(value) : ""}
+                        onChangeText={(text) => onChange(text ? Number(text) : null)}
+                        keyboardType="numeric"
+                      />
+                      {error && <AppText className="mt-1 text-sm text-red-500">{error.message}</AppText>}
+                    </View>
+                  );
+                }
+
+                // text (fallback)
                 return (
                   <View>
                     <TextInput
                       className="h-12 rounded-lg border border-slate-300 px-4 text-base bg-slate-50"
-                      placeholder={`Enter ${q.type.replace("_", " ")}`}
+                      placeholder="คำตอบของคุณ"
                       value={String(value ?? "")}
                       onChangeText={onChange}
                     />

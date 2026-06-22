@@ -32,6 +32,12 @@
           "color": "#0f766e",
           "defaultChannel": "default"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TripSync ต้องการเข้าถึงรูปภาพเพื่อตั้งรูปโปรไฟล์ของคุณ"
+        }
       ]
     ],
     "experiments": {
