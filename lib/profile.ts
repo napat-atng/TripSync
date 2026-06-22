@@ -21,14 +21,6 @@ export async function updateProfile(userId: string, values: { name: string | nul
     .single();
 
   if (error) throw error;
-
-  if (values.name !== undefined) {
-    await (supabase as any)
-      .from("trip_members")
-      .update({ display_name: values.name })
-      .eq("user_id", userId);
-  }
-
   return data as UserProfile;
 }
 

@@ -71,7 +71,9 @@ export default function ProfileScreen() {
     try {
       setIsSaving(true);
       await updateProfile(user.id, { name: name.trim() || null, avatar_url: avatarUrl });
-      Alert.alert("บันทึกเรียบร้อย", "อัปเดตโปรไฟล์แล้ว");
+      Alert.alert("บันทึกเรียบร้อย", "อัปเดตโปรไฟล์แล้ว", [
+        { text: "ตกลง", onPress: () => router.back() }
+      ]);
     } catch {
       Alert.alert("ข้อผิดพลาด", "ไม่สามารถบันทึกโปรไฟล์ได้");
     } finally {

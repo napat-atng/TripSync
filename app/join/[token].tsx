@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppText } from "../../components/AppText";
 import { getTripByInviteToken, joinTripByInviteToken } from "../../lib/trips";
 import { joinTripAsGuest } from "../../lib/members";
+import { getProfile } from "../../lib/profile";
 import { useAuth } from "../../hooks/useAuth";
 import type { Trip } from "../../types/trip";
 
@@ -48,7 +49,17 @@ export default function JoinTripScreen() {
 
   const handleJoinAsUser = async () => {
     try {
-      const defaultName = user?.email?.split("@")[0] || "Member";
+      let defaultName = "สมาชิก";
+      try {
+        const profile = await getProfile(user!.id);
+        const emailPrefix = user!.email ? user!.email.split("@")[0] : "";
+        if (profile.name && profile.name !== emailPrefix && profile.name !== user!.email) {
+          defaultName = profile.name;
+        }
+      } catch (e) {
+        // Fallback to default
+      }
+      
       const joinedTrip = await joinTripByInviteToken(token!, defaultName);
       setTrip(joinedTrip);
 

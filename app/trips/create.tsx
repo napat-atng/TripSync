@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 
 import { AppText } from "../../components/AppText";
 import { createTrip } from "../../lib/trips";
+import { getProfile } from "../../lib/profile";
 import { useAuth } from "../../hooks/useAuth";
 
 type CreateTripFormData = {
@@ -21,7 +22,18 @@ export default function CreateTripScreen() {
     if (!user) return;
     try {
       setIsSubmitting(true);
-      const displayName = user.email ? user.email.split("@")[0] : "Leader";
+      
+      let displayName = "หัวหน้าทริป";
+      try {
+        const profile = await getProfile(user.id);
+        const emailPrefix = user.email ? user.email.split("@")[0] : "";
+        if (profile.name && profile.name !== emailPrefix && profile.name !== user.email) {
+          displayName = profile.name;
+        }
+      } catch (e) {
+        // Fallback to default
+      }
+      
       const trip = await createTrip(data.name, data.description || null, user.id, displayName);
       router.replace(`/trips/${trip.id}/dashboard` as any);
     } catch (error: any) {

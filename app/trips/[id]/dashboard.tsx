@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { View, ActivityIndicator, ScrollView, Pressable, Alert } from "react-native";
+import { View, ActivityIndicator, ScrollView, Pressable, Alert, Platform } from "react-native";
 import { useLocalSearchParams, Stack, router, useFocusEffect } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 
@@ -43,6 +43,7 @@ export default function TripDashboardScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingDate, setIsSettingDate] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const [myRole, setMyRole] = useState<string | null>(null);
 
   const trip = trips.find((t) => t.id === id);
@@ -123,18 +124,7 @@ export default function TripDashboardScreen() {
 
   const handleDeleteTrip = () => {
     if (!trip || !id) return;
-    Alert.alert(
-      "ลบทริป",
-      `คุณแน่ใจว่าต้องการลบทริป "${trip.name}" ใช่ไหม? เมื่อลบแล้วจะไม่สามารถกู้คืนได้`,
-      [
-        { text: "ยกเลิก", style: "cancel" },
-        {
-          text: "ลบทริป",
-          style: "destructive",
-          onPress: () => executeDeletion(id),
-        },
-      ],
-    );
+    setIsDeleteConfirmVisible(true);
   };
 
   const executeDeletion = async (tripId: string) => {
@@ -244,21 +234,6 @@ export default function TripDashboardScreen() {
       <Stack.Screen
         options={{
           title: trip.name,
-          headerRight: isLeader
-            ? () => (
-                <Pressable
-                  onPress={handleDeleteTrip}
-                  className="mr-2"
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? (
-                    <ActivityIndicator size="small" color="#ef4444" />
-                  ) : (
-                    <AppText className="text-sm font-semibold text-red-500">ลบ</AppText>
-                  )}
-                </Pressable>
-              )
-            : undefined,
         }}
       />
 
@@ -459,12 +434,29 @@ export default function TripDashboardScreen() {
             <AppText className="font-semibold text-teal-700">เชิญเพื่อน</AppText>
           </Pressable>
         </Section>
+
+        {/* ---------------- DANGER ZONE ---------------- */}
+        {isLeader && (
+          <View className="mt-8 mb-2">
+            <Pressable
+              className="h-12 items-center justify-center rounded-xl border border-red-200 bg-red-50"
+              onPress={handleDeleteTrip}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#ef4444" />
+              ) : (
+                <AppText className="font-bold text-red-600">ลบทริป</AppText>
+              )}
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
 
       {isInviteSheetVisible && (
         <>
           <Pressable
-            className="absolute inset-0 bg-black/20"
+            className="absolute inset-0 z-40 bg-black/20"
             onPress={() => setIsInviteSheetVisible(false)}
           />
           <InviteSheet
@@ -472,6 +464,39 @@ export default function TripDashboardScreen() {
             onClose={() => setIsInviteSheetVisible(false)}
           />
         </>
+      )}
+
+      {isDeleteConfirmVisible && (
+        <View className="absolute inset-0 z-50 items-center justify-center bg-black/40 px-6">
+          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+            <AppText className="text-xl font-bold text-slate-900 text-center">ลบทริป</AppText>
+            <AppText className="mt-3 text-base text-slate-600 text-center leading-6">
+              คุณแน่ใจว่าต้องการลบทริป "{trip.name}" ใช่ไหม? เมื่อลบแล้วจะไม่สามารถกู้คืนได้
+            </AppText>
+            
+            <View className="mt-8 flex-row gap-3">
+              <Pressable
+                className="flex-1 h-12 items-center justify-center rounded-xl bg-slate-100"
+                onPress={() => setIsDeleteConfirmVisible(false)}
+                disabled={isDeleting}
+              >
+                <AppText className="font-semibold text-slate-700">ยกเลิก</AppText>
+              </Pressable>
+              <Pressable
+                className="flex-1 h-12 items-center justify-center rounded-xl"
+                style={{ backgroundColor: '#ef4444' }}
+                onPress={() => executeDeletion(trip.id)}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <AppText className="font-semibold text-white">ลบทริป</AppText>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
       )}
     </View>
   );

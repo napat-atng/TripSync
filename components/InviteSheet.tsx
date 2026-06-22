@@ -36,7 +36,7 @@ export function InviteSheet({ inviteToken, onClose }: InviteSheetProps) {
   };
 
   return (
-    <View className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white p-6 shadow-2xl">
+    <View className="absolute bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white p-6 shadow-2xl">
       <View className="mb-6 items-center">
         <View className="mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
         <AppText className="text-xl font-bold text-slate-900">เชิญเพื่อน</AppText>

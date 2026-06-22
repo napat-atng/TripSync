@@ -7,6 +7,8 @@ import {
   createVote,
   castVote,
   subscribeToVoteResponses,
+  updateVote,
+  deleteVote,
 } from "../lib/votes";
 import type { VoteWithResults } from "../types/vote";
 
@@ -23,6 +25,10 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
   const [newTitle, setNewTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [votingId, setVotingId] = useState<string | null>(null);
+  
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editingVoteId, setEditingVoteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -73,6 +79,48 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
     }
   };
 
+  const handleOpenEdit = (vote: VoteWithResults) => {
+    setEditingVoteId(vote.id);
+    setEditTitle(vote.title);
+    setEditModalVisible(true);
+  };
+
+  const handleUpdateVote = async () => {
+    if (!editingVoteId || !editTitle.trim()) return;
+    setIsSaving(true);
+    try {
+      await updateVote(editingVoteId, editTitle.trim());
+      setEditModalVisible(false);
+      setEditingVoteId(null);
+      await load();
+    } catch {
+      Alert.alert("ข้อผิดพลาด", "ไม่สามารถแก้ไขโหวตได้");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteVote = (vote: VoteWithResults) => {
+    Alert.alert("ลบโหวต", `คุณต้องการลบ "${vote.title}" ใช่ไหม?`, [
+      { text: "ยกเลิก", style: "cancel" },
+      {
+        text: "ลบ",
+        style: "destructive",
+        onPress: async () => {
+          setIsSaving(true);
+          try {
+            await deleteVote(vote.id);
+            await load();
+          } catch {
+            Alert.alert("ข้อผิดพลาด", "ไม่สามารถลบโหวตได้");
+          } finally {
+            setIsSaving(false);
+          }
+        },
+      },
+    ]);
+  };
+
   if (isLoading) {
     return (
       <View className="items-center py-6">
@@ -96,7 +144,19 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
 
         return (
           <View key={vote.id} className="mb-3 rounded-xl border border-slate-200 bg-white p-4">
-            <AppText className="mb-2 text-sm font-semibold text-slate-900">{vote.title}</AppText>
+            <View className="mb-2 flex-row items-start justify-between">
+              <AppText className="text-sm font-semibold text-slate-900 flex-1 mr-2">{vote.title}</AppText>
+              {isLeader && (
+                <View className="flex-row gap-3">
+                  <Pressable onPress={() => handleOpenEdit(vote)}>
+                    <AppText className="text-sm">✏️</AppText>
+                  </Pressable>
+                  <Pressable onPress={() => handleDeleteVote(vote)}>
+                    <AppText className="text-sm">🗑️</AppText>
+                  </Pressable>
+                </View>
+              )}
+            </View>
 
             {/* Result bar */}
             <View className="mb-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
@@ -198,6 +258,35 @@ export function VoteSection({ tripId, myMemberId, isLeader }: VoteSectionProps) 
                 <ActivityIndicator color="#fff" />
               ) : (
                 <AppText className="font-semibold text-white">สร้างโหวต</AppText>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={editModalVisible} transparent animationType="slide">
+        <View className="flex-1 justify-end bg-black/30">
+          <View className="rounded-t-2xl bg-white p-6 pb-12">
+            <View className="mb-4 flex-row items-center justify-between">
+              <AppText className="text-lg font-bold text-slate-900">แก้ไขโหวต</AppText>
+              <Pressable onPress={() => setEditModalVisible(false)}>
+                <AppText className="text-slate-500">ปิด</AppText>
+              </Pressable>
+            </View>
+            <TextInput
+              className="mb-4 h-12 rounded-lg border border-slate-200 bg-white px-4 text-base text-slate-900"
+              value={editTitle}
+              onChangeText={setEditTitle}
+            />
+            <Pressable
+              className="h-12 items-center justify-center rounded-lg bg-teal-600"
+              onPress={handleUpdateVote}
+              disabled={isSaving || !editTitle.trim()}
+            >
+              {isSaving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <AppText className="font-semibold text-white">บันทึก</AppText>
               )}
             </Pressable>
           </View>

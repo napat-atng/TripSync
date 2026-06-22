@@ -93,6 +93,28 @@ function mapVote(v: any, myMemberId: string | null): VoteWithResults {
   };
 }
 
+export async function updateVote(voteId: string, newTitle: string) {
+  const { error } = await (supabase as any)
+    .from("votes")
+    .update({ title: newTitle })
+    .eq("id", voteId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function deleteVote(voteId: string) {
+  const { error } = await (supabase as any)
+    .from("votes")
+    .delete()
+    .eq("id", voteId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function castVote(voteId: string, memberId: string, answer: boolean): Promise<VoteResponse> {
   const { data, error } = await (supabase as any)
     .from("vote_responses")
