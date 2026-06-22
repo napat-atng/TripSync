@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { View, TextInput, Pressable, Alert, ActivityIndicator } from "react-native";
+import { View, Alert } from "react-native";
 import { router } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
+import { Map, MapPin } from "lucide-react-native";
 
 import { AppText } from "../../components/AppText";
 import { createTrip } from "../../lib/trips";
 import { getProfile } from "../../lib/profile";
 import { useAuth } from "../../hooks/useAuth";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
 
 type CreateTripFormData = {
   name: string;
@@ -47,81 +50,69 @@ export default function CreateTripScreen() {
   };
 
   return (
-    <View className="flex-1 bg-slate-50 px-6 pt-10">
-      <View className="mb-8">
-        <AppText className="text-3xl font-bold text-slate-950">สร้างทริปใหม่</AppText>
-        <AppText className="mt-2 text-base text-slate-600">
-          จะไปที่ไหนกันดี?
+    <View className="flex-1 bg-surface-50 px-6 pt-10">
+      <View className="mb-8 items-center">
+        <View className="h-20 w-20 items-center justify-center rounded-2xl bg-primary-100 mb-4">
+          <Map size={40} color="#4f46e5" strokeWidth={2} />
+        </View>
+        <AppText className="text-3xl font-extrabold text-surface-950">เริ่มทริปใหม่</AppText>
+        <AppText className="mt-2 text-base text-surface-500">
+          ตั้งชื่อและรายละเอียดให้เพื่อนๆ รู้ว่าเราจะไปไหนกัน!
         </AppText>
       </View>
 
-      <View className="mb-6">
-        <AppText className="mb-2 text-sm font-semibold text-slate-700">
-          ชื่อทริป *
-        </AppText>
-        <Controller
-          control={control}
-          rules={{ required: "กรุณากรอกชื่อทริป" }}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              className="h-14 rounded-lg border border-slate-300 bg-white px-4 text-base"
-              placeholder="เช่น สายฟ้าไปโตเกียว"
-              placeholderTextColor="#94a3b8"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
-          )}
-          name="name"
-        />
-        {errors.name && (
-          <AppText className="mt-1 text-sm text-red-500">{errors.name.message}</AppText>
+      <Controller
+        control={control}
+        rules={{ required: "กรุณากรอกชื่อทริป" }}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <Input
+            label="ชื่อทริป"
+            placeholder="เช่น โตเกียวสัปดาห์หน้า"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            error={errors.name?.message}
+            icon={<MapPin size={20} color="#94a3b8" />}
+          />
         )}
-      </View>
+        name="name"
+      />
 
-      <View className="mb-8">
-        <AppText className="mb-2 text-sm font-semibold text-slate-700">
-          รายละเอียด (ไม่บังคับ)
-        </AppText>
-        <Controller
-          control={control}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              className="min-h-[100px] rounded-lg border border-slate-300 bg-white p-4 text-base"
-              placeholder="ทริปนี้เป็นยังไง?"
-              placeholderTextColor="#94a3b8"
-              multiline
-              textAlignVertical="top"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
-          )}
-          name="description"
-        />
-      </View>
-
-      <Pressable
-        accessibilityRole="button"
-        className="h-14 items-center justify-center rounded-lg bg-teal-600 shadow-sm"
-        disabled={isSubmitting}
-        onPress={handleSubmit(onSubmit)}
-      >
-        {isSubmitting ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <AppText className="text-base font-semibold text-white">สร้างทริป</AppText>
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <Input
+            label="รายละเอียด (ไม่บังคับ)"
+            placeholder="ทริปนี้เป็นยังไง?"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            multiline
+            numberOfLines={4}
+            className="h-32 pt-4"
+            textAlignVertical="top"
+          />
         )}
-      </Pressable>
+        name="description"
+      />
 
-      <Pressable
-        accessibilityRole="button"
-        className="mt-4 h-14 items-center justify-center rounded-lg"
-        disabled={isSubmitting}
-        onPress={() => router.back()}
-      >
-        <AppText className="text-base font-semibold text-slate-600">ยกเลิก</AppText>
-      </Pressable>
+      <View className="mt-auto pb-10 gap-3">
+        <Button
+          loading={isSubmitting}
+          onPress={handleSubmit(onSubmit)}
+          size="lg"
+        >
+          สร้างทริปเลย!
+        </Button>
+
+        <Button
+          variant="ghost"
+          onPress={() => router.back()}
+          disabled={isSubmitting}
+        >
+          ยกเลิก
+        </Button>
+      </View>
     </View>
   );
 }

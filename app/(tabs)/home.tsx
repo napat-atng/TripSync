@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, View, FlatList, ActivityIndicator, TextInput } from "react-native";
+import { Alert, Pressable, View, FlatList, ActivityIndicator, Image } from "react-native";
 import { router } from "expo-router";
+import { Plus, LogOut, Map, Calendar, Users, Link2 } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { AppText } from "../../components/AppText";
 import { useAuth } from "../../hooks/useAuth";
 import { useTripStore } from "../../store/tripStore";
 import { getUserTrips } from "../../lib/trips";
+import { Button } from "../../components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
 
 export default function HomeScreen() {
   const { trips, setTrips, isLoading, setIsLoading } = useTripStore();
@@ -68,80 +73,145 @@ export default function HomeScreen() {
   };
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <View className="flex-row items-center justify-between px-6 py-4">
-        <AppText className="text-2xl font-bold text-slate-950">TripSync</AppText>
-        <Pressable onPress={handleSignOut}>
-          <AppText className="text-sm font-semibold text-slate-600">ออกจากระบบ</AppText>
-        </Pressable>
+    <View className="flex-1 bg-surface-50">
+      <View className="flex-row items-center justify-between px-6 py-4 bg-white border-b border-surface-200">
+        <View className="flex-row items-center">
+          <View className="w-8 h-8 rounded-lg bg-primary-100 items-center justify-center mr-3">
+            <Map size={18} color="#4f46e5" strokeWidth={2.5} />
+          </View>
+          <AppText className="text-xl font-bold text-surface-950">TripSync</AppText>
+        </View>
+        <Button variant="ghost" size="sm" onPress={handleSignOut} className="px-2">
+          <LogOut size={20} color="#64748b" />
+        </Button>
       </View>
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#0f766e" />
+          <ActivityIndicator size="large" color="#4f46e5" />
         </View>
       ) : (
         <FlatList
           data={trips}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
           ListHeaderComponent={
-            <View className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <AppText className="mb-2 text-base font-bold text-slate-900">เข้าร่วมทริปจากลิงก์เชิญ</AppText>
-              <AppText className="mb-3 text-sm text-slate-500">
-                วางลิงก์ที่ได้รับจากเพื่อน หรือใส่รหัสเชิญโดยตรง
-              </AppText>
-              <TextInput
-                className="mb-3 h-12 rounded-lg border border-slate-300 bg-slate-50 px-4 text-base text-slate-900"
-                placeholder="tripsync://join/..."
-                value={inviteLink}
-                onChangeText={setInviteLink}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                returnKeyType="go"
-                onSubmitEditing={handleOpenInvite}
-              />
-              <Pressable
-                className="h-12 items-center justify-center rounded-lg bg-teal-600"
-                onPress={handleOpenInvite}
-              >
-                <AppText className="font-semibold text-white">เข้าร่วมทริป</AppText>
-              </Pressable>
-            </View>
+            <Card className="mb-6 border-primary-100 bg-primary-50/50">
+              <CardContent className="pt-6">
+                <AppText className="mb-2 text-base font-bold text-primary-950">
+                  เข้าร่วมทริปด้วยลิงก์เชิญ
+                </AppText>
+                <AppText className="mb-4 text-sm text-primary-700/80">
+                  มีลิงก์จากเพื่อนแล้วใช่ไหม? วางลิงก์เพื่อเข้าร่วมทริปได้เลย
+                </AppText>
+                <View className="flex-row items-center">
+                  <View className="flex-1">
+                    <Input
+                      placeholder="tripsync://join/..."
+                      value={inviteLink}
+                      onChangeText={setInviteLink}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                      returnKeyType="go"
+                      onSubmitEditing={handleOpenInvite}
+                      className="mb-0"
+                      icon={<Link2 size={20} color="#94a3b8" />}
+                    />
+                  </View>
+                  <Button 
+                    className="ml-3 h-14 px-5 bg-primary-600" 
+                    onPress={handleOpenInvite}
+                  >
+                    เข้าร่วม
+                  </Button>
+                </View>
+              </CardContent>
+            </Card>
           }
           ListEmptyComponent={
-            <View className="mt-20 items-center">
-              <AppText className="text-center text-lg font-semibold text-slate-700">
+            <View className="mt-12 items-center px-4">
+              <View className="w-24 h-24 rounded-full bg-surface-100 items-center justify-center mb-6">
+                <Map size={40} color="#94a3b8" strokeWidth={1.5} />
+              </View>
+              <AppText className="text-center text-xl font-bold text-surface-900">
                 ยังไม่มีทริป
               </AppText>
-              <AppText className="mt-2 text-center text-slate-500">
-                กดปุ่ม + ด้านล่างเพื่อสร้างทริปแรกของคุณ!
+              <AppText className="mt-2 text-center text-surface-500 max-w-[250px]">
+                เริ่มต้นการเดินทางของคุณโดยการสร้างทริปใหม่ หรือเข้าร่วมทริปจากเพื่อน
               </AppText>
+              <Button 
+                className="mt-8 px-8"
+                onPress={() => router.push("/trips/create" as any)}
+              >
+                สร้างทริปแรกของคุณ
+              </Button>
             </View>
           }
-          renderItem={({ item }) => (
-            <Pressable
-              className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-              onPress={() => router.push(`/trips/${item.id}/dashboard` as any)}
-            >
-              <AppText className="text-lg font-bold text-slate-900">{item.name}</AppText>
-              {item.description && (
-                <AppText className="mt-1 text-sm text-slate-500" numberOfLines={2}>
-                  {item.description}
-                </AppText>
-              )}
-            </Pressable>
-          )}
+          renderItem={({ item, index }) => {
+            const gradients = [
+              ['#4f46e5', '#3b82f6'],
+              ['#0ea5e9', '#06b6d4'],
+              ['#8b5cf6', '#d946ef'],
+              ['#f59e0b', '#ef4444'],
+            ];
+            const colors = gradients[index % gradients.length];
+            
+            return (
+              <Pressable
+                className="mb-4"
+                onPress={() => router.push(`/trips/${item.id}/dashboard` as any)}
+              >
+                <View className="overflow-hidden rounded-2xl bg-white border border-surface-200 shadow-sm">
+                  <View className="h-24">
+                    <LinearGradient
+                      colors={colors as [string, string]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{ flex: 1, opacity: 0.8 }}
+                    />
+                    <View className="absolute inset-0 bg-black/10" />
+                    <View className="absolute inset-0 p-4 justify-end">
+                      <AppText className="text-xl font-bold text-white shadow-sm">{item.name}</AppText>
+                    </View>
+                  </View>
+                  
+                  <View className="p-4">
+                    {item.description ? (
+                      <AppText className="text-sm text-surface-600 mb-4" numberOfLines={2}>
+                        {item.description}
+                      </AppText>
+                    ) : (
+                      <AppText className="text-sm text-surface-400 italic mb-4">
+                        ไม่มีคำอธิบายทริป
+                      </AppText>
+                    )}
+                    
+                    <View className="flex-row items-center justify-between border-t border-surface-100 pt-3 mt-1">
+                      <View className="flex-row items-center">
+                        <Users size={16} color="#64748b" />
+                        <AppText className="ml-1.5 text-xs font-medium text-surface-500">
+                          ดูรายละเอียดทริป
+                        </AppText>
+                      </View>
+                      <View className="w-8 h-8 rounded-full bg-surface-100 items-center justify-center">
+                        <AppText className="text-surface-600 font-bold">→</AppText>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          }}
         />
       )}
 
       {/* Floating Action Button */}
       <Pressable
-        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-teal-600 shadow-lg"
+        className="absolute bottom-6 right-6 h-16 w-16 items-center justify-center rounded-full bg-primary-600 shadow-xl shadow-primary-600/30"
         onPress={() => router.push("/trips/create" as any)}
       >
-        <AppText className="text-3xl text-white">+</AppText>
+        <Plus size={32} color="#ffffff" />
       </Pressable>
     </View>
   );

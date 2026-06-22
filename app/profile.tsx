@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { Camera, Mail, User } from "lucide-react-native";
 
 import { AppText } from "../components/AppText";
 import { useAuth } from "../hooks/useAuth";
 import { getProfile, updateProfile, uploadAvatar } from "../lib/profile";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
 
 export default function ProfileScreen() {
   const user = useAuth((state) => state.user);
@@ -83,63 +86,68 @@ export default function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-slate-50">
-        <ActivityIndicator size="large" color="#0f766e" />
+      <View className="flex-1 items-center justify-center bg-surface-50">
+        <ActivityIndicator size="large" color="#4f46e5" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-slate-50 px-6 pt-8">
+    <View className="flex-1 bg-surface-50 px-6 pt-8">
 
-      <View className="items-center">
+      <View className="items-center mb-8">
         <Pressable
-          className="h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-slate-200"
+          className="relative h-32 w-32 items-center justify-center rounded-full bg-surface-200 border-4 border-white shadow-sm"
           onPress={handlePickAvatar}
           disabled={isSaving}
         >
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} className="h-28 w-28" />
+            <Image source={{ uri: avatarUrl }} className="h-full w-full rounded-full" />
           ) : (
-            <AppText className="text-4xl font-bold text-slate-500">
+            <AppText className="text-5xl font-bold text-primary-500">
               {(name || user?.email || "?").slice(0, 1).toUpperCase()}
             </AppText>
           )}
-        </Pressable>
-        <Pressable className="mt-3" onPress={handlePickAvatar} disabled={isSaving}>
-          <AppText className="font-semibold text-teal-700">เปลี่ยนรูปโปรไฟล์</AppText>
+          
+          <View className="absolute bottom-0 right-0 bg-primary-600 rounded-full p-2 border-2 border-white shadow-sm">
+            <Camera size={16} color="#ffffff" />
+          </View>
         </Pressable>
       </View>
 
-      <View className="mt-8">
-        <AppText className="mb-2 text-sm font-semibold text-slate-700">ชื่อเล่น</AppText>
-        <TextInput
-          className="h-14 rounded-lg border border-slate-300 bg-white px-4 text-base text-slate-900"
+      <View className="space-y-4">
+        <Input
+          label="ชื่อเล่น"
           placeholder="ชื่อที่อยากให้เพื่อนเห็น"
           value={name}
           onChangeText={setName}
           editable={!isSaving}
+          icon={<User size={20} color="#94a3b8" />}
         />
-      </View>
 
-      <View className="mt-5">
-        <AppText className="mb-2 text-sm font-semibold text-slate-700">อีเมล</AppText>
-        <View className="h-14 justify-center rounded-lg border border-slate-200 bg-slate-100 px-4">
-          <AppText className="text-base text-slate-500">{user?.email ?? "-"}</AppText>
+        <View className="mb-4">
+          <AppText className="text-sm font-medium text-surface-700 ml-1 mb-1.5">
+            อีเมล
+          </AppText>
+          <View className="relative justify-center">
+            <View className="absolute left-4 z-10">
+              <Mail size={20} color="#94a3b8" />
+            </View>
+            <View className="flex h-14 w-full justify-center rounded-xl border border-surface-200 bg-surface-100 px-4 pl-12">
+              <AppText className="text-base text-surface-500">{user?.email ?? "-"}</AppText>
+            </View>
+          </View>
         </View>
       </View>
 
-      <Pressable
-        className="mt-8 h-14 items-center justify-center rounded-lg bg-teal-600"
-        onPress={handleSave}
-        disabled={isSaving}
-      >
-        {isSaving ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <AppText className="text-base font-semibold text-white">บันทึกโปรไฟล์</AppText>
-        )}
-      </Pressable>
+      <View className="mt-8 flex-1">
+        <Button
+          onPress={handleSave}
+          loading={isSaving}
+        >
+          บันทึกโปรไฟล์
+        </Button>
+      </View>
     </View>
   );
 }

@@ -23,10 +23,8 @@ function useProtectedRoute() {
     const isJoinRoute = (segments[0] as string) === "join";
 
     if (!session && !inAuthGroup && !isJoinRoute) {
-      // No session, redirect to login
       router.replace("/(auth)/login");
     } else if (session && inAuthGroup) {
-      // Has session but in auth group, redirect to home
       router.replace("/(tabs)/home");
     }
   }, [session, segments, isLoading, router]);
@@ -41,13 +39,11 @@ export default function RootLayout() {
   const responseListener = useRef<any>(null);
 
   useEffect(() => {
-    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsLoading(false);
     });
 
-    // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -59,7 +55,6 @@ export default function RootLayout() {
     };
   }, [setSession, setIsLoading]);
 
-  // Register push token once user is logged in
   useEffect(() => {
     if (!session) return;
     registerPushToken().catch((err) =>
@@ -67,34 +62,33 @@ export default function RootLayout() {
     );
   }, [session?.user?.id]);
 
-  // Listen for incoming notifications while app is foregrounded
   useEffect(() => {
     notificationListener.current =
       ExpoNotifications.addNotificationReceivedListener((notification) => {
         console.log("[notifications] Received:", notification.request.content.title);
       });
 
-    // Handle notification tap — navigate to relevant screen
     responseListener.current =
       ExpoNotifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data as any;
         if (data?.tripId) {
-          // Navigate to the trip's dashboard when user taps the notification
-          // Use a small delay to ensure the router is ready
           setTimeout(() => {
             try {
               const { router } = require("expo-router");
               router.push(`/trips/${data.tripId}/dashboard`);
             } catch {
-              // router might not be ready yet
             }
           }, 500);
         }
       });
 
     return () => {
-      ExpoNotifications.removeNotificationSubscription(notificationListener.current);
-      ExpoNotifications.removeNotificationSubscription(responseListener.current);
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
     };
   }, []);
 
@@ -102,8 +96,8 @@ export default function RootLayout() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-slate-50">
-        <ActivityIndicator size="large" color="#0f766e" />
+      <View className="flex-1 items-center justify-center bg-surface-50">
+        <ActivityIndicator size="large" color="#4f46e5" />
       </View>
     );
   }
@@ -112,11 +106,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "#0f172a" },
-          headerTintColor: "#ffffff",
+          headerStyle: { backgroundColor: "#ffffff" },
+          headerTintColor: "#0f172a",
           headerTitleStyle: { fontWeight: "700", fontSize: 17 },
+          headerShadowVisible: false,
           headerBackTitle: "กลับ",
           headerBackButtonDisplayMode: "minimal",
+          contentStyle: { backgroundColor: "#f8fafc" },
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

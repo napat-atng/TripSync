@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { View, ActivityIndicator, ScrollView, Pressable, Alert, Platform } from "react-native";
 import { useLocalSearchParams, Stack, router, useFocusEffect } from "expo-router";
 import * as Clipboard from "expo-clipboard";
+import { Calendar, Users, CheckCircle2, Clock, CreditCard, ListTodo, Share2, Trash2, BellRing, MapPin } from "lucide-react-native";
 
 import { AppText } from "../../../components/AppText";
 import { InviteSheet } from "../../../components/InviteSheet";
@@ -17,6 +18,8 @@ import { getBestDates } from "../../../lib/availability";
 import { sendPushNotification, getLeaderUserId } from "../../../lib/notifications";
 import { supabase } from "../../../lib/supabase";
 import type { DayAvailability } from "../../../types/availability";
+import { Button } from "../../../components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/Card";
 
 // Feature flag: set to true only after Edge Function is deployed
 const PUSH_NOTIFICATIONS_ENABLED = false;
@@ -48,7 +51,6 @@ export default function TripDashboardScreen() {
 
   const trip = trips.find((t) => t.id === id);
 
-  // trip_members can be nested as array from getUserTrips join
   const tripMembers = (trip as any)?.trip_members ?? [];
   const isLeader =
     myRole === "leader" ||
@@ -69,7 +71,6 @@ export default function TripDashboardScreen() {
       setAnalytics(surveyData);
       setBestDates(dates);
 
-      // Fetch role directly from DB — don’t rely on store join which may be stale
       if (mid) {
         const { data: memberRow } = await (supabase as any)
           .from("trip_members")
@@ -79,8 +80,6 @@ export default function TripDashboardScreen() {
         if (memberRow?.role) setMyRole(memberRow.role);
       }
 
-      // Trigger 2: notify leader when all members have responded
-      // Wrapped in its own try/catch so notification failure never breaks the dashboard load
       if (
         PUSH_NOTIFICATIONS_ENABLED &&
         isLeader &&
@@ -99,7 +98,6 @@ export default function TripDashboardScreen() {
             );
           }
         } catch {
-          // notification failure is non-critical — log and continue
           console.warn("[dashboard] survey-complete notification failed");
         }
       }
@@ -131,10 +129,7 @@ export default function TripDashboardScreen() {
     setIsDeleting(true);
     try {
       await deleteTrip(tripId);
-      // Remove from store AFTER successful DB delete
       removeTrip(tripId);
-      // Use setTimeout to let store update propagate before navigating
-      // This prevents useFocusEffect from seeing trip=undefined mid-deletion
       setTimeout(() => {
         router.replace("/(tabs)/home");
       }, 50);
@@ -155,7 +150,6 @@ export default function TripDashboardScreen() {
     }
 
     if (PUSH_NOTIFICATIONS_ENABLED) {
-      // Send push notification to members with accounts
       try {
         const { data: pendingRows } = await (supabase as any)
           .from("trip_members")
@@ -180,7 +174,6 @@ export default function TripDashboardScreen() {
       }
     }
 
-    // Fallback: copy reminder message to clipboard (used when push is disabled or all pending are guests)
     const names = pending.map((m) => m.display_name ?? "สมาชิก").join(", ");
     const message = `อย่าลืมตอบแบบสอบถามทริป "${trip?.name}" ด้วยนะ 🙏 รอ: ${names}`;
     await Clipboard.setStringAsync(message);
@@ -203,19 +196,18 @@ export default function TripDashboardScreen() {
     }
   };
 
-  // Don't block rendering when deleting — show spinner overlay instead
   if (isLoading && !isDeleting) {
     return (
-      <View className="flex-1 items-center justify-center bg-slate-50">
-        <ActivityIndicator size="large" color="#0f766e" />
+      <View className="flex-1 items-center justify-center bg-surface-50">
+        <ActivityIndicator size="large" color="#4f46e5" />
       </View>
     );
   }
 
   if (!trip) {
     return (
-      <View className="flex-1 items-center justify-center bg-slate-50">
-        <ActivityIndicator size="large" color="#0f766e" />
+      <View className="flex-1 items-center justify-center bg-surface-50">
+        <ActivityIndicator size="large" color="#4f46e5" />
       </View>
     );
   }
@@ -230,7 +222,7 @@ export default function TripDashboardScreen() {
   const bestDateLabel = bestDates.length > 0 ? formatDate(bestDates[0].date) : "—";
 
   return (
-    <View className="flex-1 bg-slate-50">
+    <View className="flex-1 bg-surface-50">
       <Stack.Screen
         options={{
           title: trip.name,
@@ -238,20 +230,23 @@ export default function TripDashboardScreen() {
       />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
-        <AppText className="text-2xl font-bold text-slate-900">{trip.name}</AppText>
-        {trip.description && (
-          <AppText className="mt-1 text-base text-slate-500">{trip.description}</AppText>
-        )}
-        {trip.confirmed_date && (
-          <View className="mt-3 self-start rounded-full bg-teal-100 px-3 py-1">
-            <AppText className="text-xs font-semibold text-teal-800">
-              📅 ยืนยันแล้ว: {formatDate(trip.confirmed_date)}
-            </AppText>
-          </View>
-        )}
+        <View className="mb-6">
+          <AppText className="text-3xl font-extrabold text-surface-950">{trip.name}</AppText>
+          {trip.description && (
+            <AppText className="mt-2 text-base text-surface-500 leading-6">{trip.description}</AppText>
+          )}
+          {trip.confirmed_date && (
+            <View className="mt-4 flex-row items-center self-start rounded-full bg-primary-100 px-4 py-2 border border-primary-200">
+              <Calendar size={16} color="#4f46e5" />
+              <AppText className="ml-2 text-sm font-bold text-primary-800">
+                ยืนยันแล้ว: {formatDate(trip.confirmed_date)}
+              </AppText>
+            </View>
+          )}
+        </View>
 
         {/* ---------------- QUICK STATS ---------------- */}
-        <View className="mt-6 flex-row gap-2">
+        <View className="mb-6 flex-row gap-2">
           <QuickStat label="สมาชิก" value={String(analytics?.totalMembers ?? 0)} />
           <QuickStat label="ตอบครบ" value={`${analytics?.completionPct ?? 0}%`} />
           <QuickStat label="งบประมาณ" value={budgetLabel} small />
@@ -259,196 +254,199 @@ export default function TripDashboardScreen() {
         </View>
 
         {/* ---------------- RESPONSE STATUS ---------------- */}
-        <Section title="สถานะการตอบ">
+        <Section title="สถานะการตอบแบบสอบถาม" icon={<ListTodo size={20} color="#4f46e5" />}>
           {analytics && analytics.totalMembers > 0 ? (
             <>
-              <View className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <View className="mb-4 h-3 w-full overflow-hidden rounded-full bg-surface-100 border border-surface-200">
                 <View
-                  className="h-2.5 rounded-full bg-teal-500"
+                  className="h-full rounded-full bg-primary-500"
                   style={{ width: `${analytics.completionPct}%` }}
                 />
               </View>
-              <AppText className="mb-3 text-xs text-slate-500">
+              <AppText className="mb-4 text-sm font-medium text-surface-500">
                 {analytics.respondedCount}/{analytics.totalMembers} คนตอบแล้ว
               </AppText>
 
-              {analytics.members.map((m) => (
-                <View
-                  key={m.member_id}
-                  className="mb-2 flex-row items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
-                >
-                  <AppText className="text-sm text-slate-800">
-                    {m.display_name ?? "ไม่ระบุชื่อ"}
-                  </AppText>
-                  {m.responded ? (
-                    <View className="flex-row items-center gap-1">
-                      <AppText className="text-sm text-green-600">✓</AppText>
-                      <AppText className="text-xs font-medium text-green-700">ตอบแล้ว</AppText>
-                    </View>
-                  ) : (
-                    <View className="flex-row items-center gap-1">
-                      <AppText className="text-sm text-slate-400">🕒</AppText>
-                      <AppText className="text-xs font-medium text-slate-400">รอดำเนินการ</AppText>
-                    </View>
-                  )}
-                </View>
-              ))}
+              <View className="space-y-2 mb-4">
+                {analytics.members.map((m) => (
+                  <View
+                    key={m.member_id}
+                    className="flex-row items-center justify-between rounded-xl bg-surface-50 px-4 py-3 border border-surface-100"
+                  >
+                    <AppText className="text-sm font-semibold text-surface-800">
+                      {m.display_name ?? "ไม่ระบุชื่อ"}
+                    </AppText>
+                    {m.responded ? (
+                      <View className="flex-row items-center gap-1.5">
+                        <CheckCircle2 size={16} color="#10b981" />
+                        <AppText className="text-xs font-bold text-green-600">ตอบแล้ว</AppText>
+                      </View>
+                    ) : (
+                      <View className="flex-row items-center gap-1.5">
+                        <Clock size={16} color="#94a3b8" />
+                        <AppText className="text-xs font-bold text-surface-400">รอดำเนินการ</AppText>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
 
               {isLeader && analytics.respondedCount < analytics.totalMembers && (
-                <Pressable
-                  className="mt-2 h-10 items-center justify-center rounded-lg border border-amber-300 bg-amber-50"
+                <Button 
+                  variant="outline" 
                   onPress={handleRemind}
+                  className="border-amber-200 bg-amber-50"
+                  textClassName="text-amber-700"
                 >
-                  <AppText className="text-sm font-semibold text-amber-700">
-                    เตือนสมาชิกที่ยังไม่ตอบ
-                  </AppText>
-                </Pressable>
+                  <BellRing size={18} color="#b45309" className="mr-2" />
+                  เตือนสมาชิกที่ยังไม่ตอบ
+                </Button>
               )}
             </>
           ) : (
-            <AppText className="text-sm text-slate-500">
+            <AppText className="text-sm text-surface-500">
               ยังไม่มีแบบสอบถาม สร้างได้ที่ "แก้ไขแบบสอบถาม" ด้านล่าง
             </AppText>
           )}
         </Section>
 
         {/* ---------------- BEST DATES ---------------- */}
-        <Section title="วันที่เหมาะที่สุด">
+        <Section title="วันที่เหมาะที่สุด" icon={<Calendar size={20} color="#4f46e5" />}>
           {bestDates.length === 0 ? (
-            <AppText className="text-sm text-slate-500">
+            <AppText className="text-sm text-surface-500 mb-4">
               ยังไม่มีข้อมูลวันว่าง ให้สมาชิกระบุวันว่างของตัวเองก่อนนะ
             </AppText>
           ) : (
-            bestDates.map((d, i) => (
-              <View
-                key={d.date}
-                className="mb-2 flex-row items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5"
-              >
-                <View className="flex-row items-center gap-2">
-                  <AppText className="text-sm font-semibold text-slate-900">{i + 1}.</AppText>
-                  <AppText className="text-sm text-slate-800">{formatDate(d.date)}</AppText>
-                  <View className="rounded-full bg-green-100 px-2 py-0.5">
-                    <AppText className="text-xs font-medium text-green-700">
-                      {d.count}/{d.total}
-                    </AppText>
-                  </View>
-                </View>
-                {isLeader && (
-                  <Pressable
-                    className="h-8 items-center justify-center rounded-lg bg-teal-600 px-3"
-                    onPress={() => handleSetTripDate(d.date)}
-                    disabled={isSettingDate === d.date}
-                  >
-                    {isSettingDate === d.date ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <AppText className="text-xs font-semibold text-white">
-                        เลือกเป็นวันเดินทาง
+            <View className="space-y-2 mb-4">
+              {bestDates.map((d, i) => (
+                <View
+                  key={d.date}
+                  className="flex-row items-center justify-between rounded-xl bg-surface-50 px-4 py-3 border border-surface-100"
+                >
+                  <View className="flex-row items-center gap-3">
+                    <View className="h-6 w-6 rounded-full bg-primary-100 items-center justify-center">
+                      <AppText className="text-xs font-bold text-primary-700">{i + 1}</AppText>
+                    </View>
+                    <AppText className="text-sm font-semibold text-surface-800">{formatDate(d.date)}</AppText>
+                    <View className="rounded-md bg-green-100 px-2 py-1">
+                      <AppText className="text-[10px] font-bold text-green-700">
+                        ว่าง {d.count}/{d.total}
                       </AppText>
-                    )}
-                  </Pressable>
-                )}
-              </View>
-            ))
-          )}
-
-          <Pressable
-            className="mt-3 h-10 items-center justify-center rounded-lg border border-green-200 bg-green-50"
-            onPress={() => setShowHeatmap((v) => !v)}
-          >
-            <AppText className="text-sm font-semibold text-green-700">
-              {showHeatmap ? "ซ่อน" : "ดู"}ไทมไลน์วันว่างทั้งหมด
-            </AppText>
-          </Pressable>
-
-          {showHeatmap && (
-            <View className="mt-4">
-              <AvailabilityHeatmap tripId={trip.id} />
+                    </View>
+                  </View>
+                  {isLeader && (
+                    <Button
+                      size="sm"
+                      onPress={() => handleSetTripDate(d.date)}
+                      disabled={isSettingDate === d.date}
+                      loading={isSettingDate === d.date}
+                    >
+                      เลือก
+                    </Button>
+                  )}
+                </View>
+              ))}
             </View>
           )}
 
-          <Pressable
-            className="mt-3 h-10 items-center justify-center rounded-lg bg-slate-900"
-            onPress={() => router.push(`/trips/${trip.id}/availability` as any)}
-          >
-            <AppText className="text-sm font-semibold text-white">ระบุวันว่างของฉัน</AppText>
-          </Pressable>
+          <View className="flex-row gap-3">
+            <Button
+              className="flex-1"
+              variant="outline"
+              onPress={() => setShowHeatmap((v) => !v)}
+            >
+              {showHeatmap ? "ซ่อนไทมไลน์" : "ดูไทมไลน์วันว่าง"}
+            </Button>
+            <Button
+              className="flex-1"
+              onPress={() => router.push(`/trips/${trip.id}/availability` as any)}
+            >
+              ระบุวันว่าง
+            </Button>
+          </View>
+
+          {showHeatmap && (
+            <View className="mt-6 border-t border-surface-100 pt-6">
+              <AvailabilityHeatmap tripId={trip.id} />
+            </View>
+          )}
         </Section>
 
         {/* ---------------- SURVEY RESULTS ---------------- */}
-        <Section title="ผลสำรวจ">
+        <Section title="ผลสำรวจ & โหวต" icon={<ListTodo size={20} color="#4f46e5" />}>
           <SurveyResultsSection results={analytics?.results ?? []} />
-          <View className="mt-2 flex-row gap-3">
-            <Pressable
-              className="flex-1 h-11 items-center justify-center rounded-lg bg-teal-600"
+          
+          <View className="mt-6 border-t border-surface-100 pt-6">
+            <VoteSection tripId={trip.id} myMemberId={myMemberId} isLeader={!!isLeader} />
+          </View>
+
+          <View className="mt-6 flex-row gap-3">
+            <Button
+              className="flex-1"
               onPress={() => router.push(`/trips/${trip.id}/survey/respond` as any)}
             >
-              <AppText className="font-semibold text-white">ตอบแบบสอบถาม</AppText>
-            </Pressable>
+              ตอบแบบสอบถาม
+            </Button>
             {isLeader && (
-              <Pressable
-                className="flex-1 h-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50"
+              <Button
+                className="flex-1"
+                variant="secondary"
                 onPress={() => router.push(`/trips/${trip.id}/survey/builder` as any)}
               >
-                <AppText className="font-semibold text-slate-700">แก้ไขแบบสอบถาม</AppText>
-              </Pressable>
+                แก้ไขแบบสอบถาม
+              </Button>
             )}
           </View>
         </Section>
 
-        {/* ---------------- VOTE ---------------- */}
-        <Section title="โหวตอบคำถาม">
-          <VoteSection tripId={trip.id} myMemberId={myMemberId} isLeader={!!isLeader} />
-        </Section>
-
         {/* ---------------- EXPENSES ---------------- */}
-        <Section title="ค่าใช้จ่าย">
-          <AppText className="mb-4 text-sm text-slate-500">
-            ติดตามค่าใช้จ่ายและหารจำนวนเงินแบบกลุ่ม
+        <Section title="ค่าใช้จ่าย" icon={<CreditCard size={20} color="#4f46e5" />}>
+          <AppText className="mb-5 text-sm text-surface-500">
+            ติดตามค่าใช้จ่ายและหารจำนวนเงินแบบกลุ่มอัตโนมัติ
           </AppText>
           <View className="flex-row gap-3">
-            <Pressable
-              className="flex-1 h-11 items-center justify-center rounded-lg bg-teal-600"
+            <Button
+              className="flex-1"
+              variant="outline"
               onPress={() => router.push(`/trips/${trip.id}/expenses` as any)}
             >
-              <AppText className="font-semibold text-white">ดูค่าใช้จ่าย</AppText>
-            </Pressable>
-            <Pressable
-              className="flex-1 h-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50"
+              ดูค่าใช้จ่าย
+            </Button>
+            <Button
+              className="flex-1"
               onPress={() => router.push(`/trips/${trip.id}/expenses/add` as any)}
             >
-              <AppText className="font-semibold text-slate-700">+ เพิ่ม</AppText>
-            </Pressable>
+              + เพิ่มรายการ
+            </Button>
           </View>
         </Section>
 
         {/* ---------------- MEMBERS ---------------- */}
-        <Section title="สมาชิกในทริป">
-          <AppText className="mb-4 text-sm text-slate-500">
-            ชวนเพื่อนๆ สักคนมาวางแผนด้วยกันเลย!
+        <Section title="สมาชิกในทริป" icon={<Users size={20} color="#4f46e5" />}>
+          <AppText className="mb-5 text-sm text-surface-500">
+            ชวนเพื่อนๆ มาร่วมวงวางแผนด้วยกัน!
           </AppText>
-          <Pressable
-            className="h-11 items-center justify-center rounded-lg bg-teal-50"
+          <Button
+            variant="secondary"
             onPress={() => setIsInviteSheetVisible(true)}
           >
-            <AppText className="font-semibold text-teal-700">เชิญเพื่อน</AppText>
-          </Pressable>
+            <Share2 size={18} color="#0f172a" className="mr-2" />
+            เชิญเพื่อนร่วมทริป
+          </Button>
         </Section>
 
         {/* ---------------- DANGER ZONE ---------------- */}
         {isLeader && (
           <View className="mt-8 mb-2">
-            <Pressable
-              className="h-12 items-center justify-center rounded-xl border border-red-200 bg-red-50"
+            <Button
+              variant="destructive"
               onPress={handleDeleteTrip}
               disabled={isDeleting}
+              loading={isDeleting}
             >
-              {isDeleting ? (
-                <ActivityIndicator size="small" color="#ef4444" />
-              ) : (
-                <AppText className="font-bold text-red-600">ลบทริป</AppText>
-              )}
-            </Pressable>
+              <Trash2 size={18} color="#ffffff" className="mr-2" />
+              ลบทริปนี้
+            </Button>
           </View>
         )}
       </ScrollView>
@@ -456,7 +454,7 @@ export default function TripDashboardScreen() {
       {isInviteSheetVisible && (
         <>
           <Pressable
-            className="absolute inset-0 z-40 bg-black/20"
+            className="absolute inset-0 z-40 bg-black/40"
             onPress={() => setIsInviteSheetVisible(false)}
           />
           <InviteSheet
@@ -468,32 +466,33 @@ export default function TripDashboardScreen() {
 
       {isDeleteConfirmVisible && (
         <View className="absolute inset-0 z-50 items-center justify-center bg-black/40 px-6">
-          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
-            <AppText className="text-xl font-bold text-slate-900 text-center">ลบทริป</AppText>
-            <AppText className="mt-3 text-base text-slate-600 text-center leading-6">
+          <View className="w-full max-w-sm rounded-[32px] bg-white p-8 shadow-2xl">
+            <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center self-center mb-4">
+              <Trash2 size={24} color="#ef4444" />
+            </View>
+            <AppText className="text-2xl font-bold text-surface-950 text-center">ลบทริป</AppText>
+            <AppText className="mt-3 text-base text-surface-500 text-center leading-6 mb-8">
               คุณแน่ใจว่าต้องการลบทริป "{trip.name}" ใช่ไหม? เมื่อลบแล้วจะไม่สามารถกู้คืนได้
             </AppText>
             
-            <View className="mt-8 flex-row gap-3">
-              <Pressable
-                className="flex-1 h-12 items-center justify-center rounded-xl bg-slate-100"
-                onPress={() => setIsDeleteConfirmVisible(false)}
-                disabled={isDeleting}
-              >
-                <AppText className="font-semibold text-slate-700">ยกเลิก</AppText>
-              </Pressable>
-              <Pressable
-                className="flex-1 h-12 items-center justify-center rounded-xl"
-                style={{ backgroundColor: '#ef4444' }}
+            <View className="flex-col gap-3">
+              <Button
+                variant="destructive"
                 onPress={() => executeDeletion(trip.id)}
                 disabled={isDeleting}
+                loading={isDeleting}
+                size="lg"
               >
-                {isDeleting ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <AppText className="font-semibold text-white">ลบทริป</AppText>
-                )}
-              </Pressable>
+                ลบทิ้งเลย
+              </Button>
+              <Button
+                variant="ghost"
+                onPress={() => setIsDeleteConfirmVisible(false)}
+                disabled={isDeleting}
+                size="lg"
+              >
+                ยกเลิก
+              </Button>
             </View>
           </View>
         </View>
@@ -502,25 +501,30 @@ export default function TripDashboardScreen() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <View className="mt-4 rounded-xl border border-slate-200 bg-white p-5">
-      <AppText className="mb-4 text-base font-semibold text-slate-900">{title}</AppText>
-      {children}
-    </View>
+    <Card className="mb-4 border-surface-200">
+      <CardHeader className="flex-row items-center gap-2 pb-4">
+        {icon && <View>{icon}</View>}
+        <CardTitle className="text-lg">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {children}
+      </CardContent>
+    </Card>
   );
 }
 
 function QuickStat({ label, value, small }: { label: string; value: string; small?: boolean }) {
   return (
-    <View className="flex-1 items-center rounded-xl border border-slate-200 bg-white px-2 py-3">
+    <View className="flex-1 items-center justify-center rounded-2xl border border-surface-200 bg-white p-3 shadow-sm">
       <AppText
-        className={`font-bold text-slate-900 ${small ? "text-xs" : "text-base"}`}
+        className={`font-extrabold text-primary-600 ${small ? "text-sm" : "text-xl"}`}
         numberOfLines={1}
       >
         {value}
       </AppText>
-      <AppText className="mt-0.5 text-[10px] text-slate-400" numberOfLines={1}>
+      <AppText className="mt-1 text-[11px] font-medium text-surface-500 uppercase tracking-wider" numberOfLines={1}>
         {label}
       </AppText>
     </View>
