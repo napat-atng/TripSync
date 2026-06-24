@@ -38,7 +38,8 @@
         {
           "photosPermission": "TripSync ต้องการเข้าถึงรูปภาพเพื่อตั้งรูปโปรไฟล์ของคุณ"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

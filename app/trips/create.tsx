@@ -53,7 +53,7 @@ export default function CreateTripScreen() {
     <View className="flex-1 bg-surface-50 px-6 pt-10">
       <View className="mb-8 items-center">
         <View className="h-20 w-20 items-center justify-center rounded-2xl bg-primary-100 mb-4">
-          <Map size={40} color="#4f46e5" strokeWidth={2} />
+          <Map size={40} color="#D85A30" strokeWidth={2} />
         </View>
         <AppText className="text-3xl font-extrabold text-surface-950">เริ่มทริปใหม่</AppText>
         <AppText className="mt-2 text-base text-surface-500">

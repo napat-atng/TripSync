@@ -7,10 +7,11 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: "#0f172a" },
+        headerStyle: { backgroundColor: "#4A1B0C" },
         headerTintColor: "#ffffff",
         headerTitleStyle: { fontWeight: "700" },
-        tabBarActiveTintColor: "#0f766e",
+        tabBarActiveTintColor: "#D85A30",
+        tabBarStyle: { borderTopColor: "#F5C4B3" },
       }}
     >
       <Tabs.Screen
@@ -22,7 +23,7 @@ export default function TabsLayout() {
               onPress={() => router.push("/profile")}
               className="mr-4"
             >
-              <AppText className="text-sm font-semibold text-teal-300">โปรไฟล์</AppText>
+              <AppText className="text-sm font-semibold text-primary-200">โปรไฟล์</AppText>
             </Pressable>
           ),
         }}

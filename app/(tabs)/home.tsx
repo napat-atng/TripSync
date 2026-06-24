@@ -88,7 +88,7 @@ export default function HomeScreen() {
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#4f46e5" />
+          <ActivityIndicator size="large" color="#D85A30" />
         </View>
       ) : (
         <FlatList
@@ -150,10 +150,10 @@ export default function HomeScreen() {
           }
           renderItem={({ item, index }) => {
             const gradients = [
-              ['#4f46e5', '#3b82f6'],
-              ['#0ea5e9', '#06b6d4'],
-              ['#8b5cf6', '#d946ef'],
-              ['#f59e0b', '#ef4444'],
+              ['#D85A30', '#E87455'],
+              ['#993C1D', '#D85A30'],
+              ['#4A1B0C', '#993C1D'],
+              ['#E06640', '#F0997B'],
             ];
             const colors = gradients[index % gradients.length];
             

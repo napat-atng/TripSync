@@ -199,7 +199,7 @@ export default function TripDashboardScreen() {
   if (isLoading && !isDeleting) {
     return (
       <View className="flex-1 items-center justify-center bg-surface-50">
-        <ActivityIndicator size="large" color="#4f46e5" />
+        <ActivityIndicator size="large" color="#D85A30" />
       </View>
     );
   }
@@ -207,7 +207,7 @@ export default function TripDashboardScreen() {
   if (!trip) {
     return (
       <View className="flex-1 items-center justify-center bg-surface-50">
-        <ActivityIndicator size="large" color="#4f46e5" />
+        <ActivityIndicator size="large" color="#D85A30" />
       </View>
     );
   }

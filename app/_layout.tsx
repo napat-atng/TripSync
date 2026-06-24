@@ -1,14 +1,26 @@
 import { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { ActivityIndicator, AppState, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as ExpoNotifications from "expo-notifications";
+import * as SplashScreen from "expo-splash-screen";
+import {
+  useFonts,
+  Sarabun_400Regular,
+  Sarabun_500Medium,
+  Sarabun_700Bold,
+} from "@expo-google-fonts/sarabun";
 
 import "../global.css";
 
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/authStore";
 import { registerPushToken } from "../lib/notifications";
+
+// Keep splash visible until fonts + auth are ready
+SplashScreen.preventAutoHideAsync();
+
+const HEADER_FONT = "Sarabun_700Bold";
 
 function useProtectedRoute() {
   const segments = useSegments();
@@ -38,6 +50,20 @@ export default function RootLayout() {
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
 
+  // Load Sarabun font family
+  const [fontsLoaded, fontError] = useFonts({
+    Sarabun_400Regular,
+    Sarabun_500Medium,
+    Sarabun_700Bold,
+  });
+
+  // Hide splash once fonts are loaded (whether success or error)
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -50,9 +76,7 @@ export default function RootLayout() {
       setSession(session);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [setSession, setIsLoading]);
 
   useEffect(() => {
@@ -76,28 +100,28 @@ export default function RootLayout() {
             try {
               const { router } = require("expo-router");
               router.push(`/trips/${data.tripId}/dashboard`);
-            } catch {
-            }
+            } catch {}
           }, 500);
         }
       });
 
     return () => {
-      if (notificationListener.current) {
-        notificationListener.current.remove();
-      }
-      if (responseListener.current) {
-        responseListener.current.remove();
-      }
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
     };
   }, []);
 
   useProtectedRoute();
 
+  // Wait for fonts before rendering — avoids font flash
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-surface-50">
-        <ActivityIndicator size="large" color="#4f46e5" />
+        <ActivityIndicator size="large" color="#D85A30" />
       </View>
     );
   }
@@ -108,7 +132,13 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: "#ffffff" },
           headerTintColor: "#0f172a",
-          headerTitleStyle: { fontWeight: "700", fontSize: 17 },
+          headerTitleStyle: {
+            fontFamily: HEADER_FONT,
+            fontSize: 17,
+          },
+          headerBackTitleStyle: {
+            fontFamily: "Sarabun_400Regular",
+          },
           headerShadowVisible: false,
           headerBackTitle: "กลับ",
           headerBackButtonDisplayMode: "minimal",

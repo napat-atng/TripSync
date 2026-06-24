@@ -42,7 +42,7 @@ export default function LoginScreen() {
       {/* Dynamic Background with Gradient overlay */}
       <View className="absolute inset-0 z-0">
         <LinearGradient
-          colors={['#4f46e5', '#1e1b4b']}
+          colors={['#D85A30', '#4A1B0C']}
           style={StyleSheet.absoluteFill}
         />
         <View className="absolute inset-0 bg-black/20" />
@@ -52,8 +52,8 @@ export default function LoginScreen() {
         
         {/* Top Hero Area */}
         <View className="items-center mt-12">
-          <View className="mb-6 h-24 w-24 items-center justify-center rounded-[32px] bg-white shadow-2xl shadow-primary-500/50">
-            <MapPin size={48} color="#4f46e5" strokeWidth={2.5} />
+          <View className="mb-6 h-24 w-24 items-center justify-center rounded-[32px] bg-white">
+            <MapPin size={48} color="#D85A30" strokeWidth={2.5} />
           </View>
           <AppText className="text-5xl font-extrabold tracking-tight text-white mb-3">
             TripSync
