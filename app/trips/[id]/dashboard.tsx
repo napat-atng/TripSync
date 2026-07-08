@@ -36,6 +36,7 @@ export default function TripDashboardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const trips = useTripStore((state) => state.trips);
   const removeTrip = useTripStore((state) => state.removeTrip);
+  const updateTrip = useTripStore((state) => state.updateTrip);
   const user = useAuth((s) => s.user);
 
   const [isInviteSheetVisible, setIsInviteSheetVisible] = useState(false);
@@ -187,7 +188,10 @@ export default function TripDashboardScreen() {
     if (!id) return;
     setIsSettingDate(date);
     try {
-      await setConfirmedDate(id, date);
+      const updatedTrip = await setConfirmedDate(id, date);
+      // Update global store so the UI reacts immediately
+      updateTrip(id, { confirmed_date: updatedTrip.confirmed_date });
+      
       Alert.alert("กำหนดวันเดินทางแล้ว!", `ยืนยันวัน ${formatDate(date)} แล้ว`);
     } catch {
       Alert.alert("ข้อผิดพลาด", "ไม่สามารถกำหนดวันเดินทางได้ กรุณาลองใหม่อีกครั้ง");
@@ -219,7 +223,9 @@ export default function TripDashboardScreen() {
         ).toLocaleString()}`
       : "—";
 
-  const bestDateLabel = bestDates.length > 0 ? formatDate(bestDates[0].date) : "—";
+  const bestDateLabel = trip.confirmed_date
+    ? formatDate(trip.confirmed_date)
+    : (bestDates.length > 0 ? formatDate(bestDates[0].date) : "—");
 
   return (
     <View className="flex-1 bg-surface-50">
@@ -250,7 +256,7 @@ export default function TripDashboardScreen() {
           <QuickStat label="สมาชิก" value={String(analytics?.totalMembers ?? 0)} />
           <QuickStat label="ตอบครบ" value={`${analytics?.completionPct ?? 0}%`} />
           <QuickStat label="งบประมาณ" value={budgetLabel} small />
-          <QuickStat label="วันที่เหมาะ" value={bestDateLabel} small />
+          <QuickStat label="วันเดินทาง" value={bestDateLabel} small />
         </View>
 
         {/* ---------------- RESPONSE STATUS ---------------- */}
@@ -338,10 +344,11 @@ export default function TripDashboardScreen() {
                     <Button
                       size="sm"
                       onPress={() => handleSetTripDate(d.date)}
-                      disabled={isSettingDate === d.date}
+                      disabled={isSettingDate === d.date || trip.confirmed_date === d.date}
                       loading={isSettingDate === d.date}
+                      variant={trip.confirmed_date === d.date ? "secondary" : "default"}
                     >
-                      เลือก
+                      {trip.confirmed_date === d.date ? "เลือกแล้ว" : "เลือก"}
                     </Button>
                   )}
                 </View>

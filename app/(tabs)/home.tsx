@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, Pressable, View, FlatList, ActivityIndicator, Image } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Plus, LogOut, Map, Calendar, Users, Link2 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -18,11 +18,13 @@ export default function HomeScreen() {
   const signOut = useAuth((state) => state.signOut);
   const [inviteLink, setInviteLink] = useState("");
 
-  useEffect(() => {
-    if (user) {
-      loadTrips();
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadTrips();
+      }
+    }, [user])
+  );
 
   const loadTrips = async () => {
     try {

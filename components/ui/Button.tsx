@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import React, { forwardRef } from "react";
 import { Pressable, type PressableProps, View, ActivityIndicator } from "react-native";
 import { cn } from "../../lib/utils";
 import { AppText } from "../AppText";
@@ -45,25 +45,28 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
             style={{ marginRight: 8 }}
           />
         )}
-        {typeof children === "string" ? (
-          <AppText
-            className={cn(
-              "font-semibold text-base",
-              size === "lg" && "text-lg",
-              size === "sm" && "text-sm text-center",
-              variant === "default" && "text-white",
-              isSecondary && "text-surface-900",
-              isOutline && "text-surface-900",
-              isGhost && "text-surface-900",
-              isDestructive && "text-white",
-              textClassName,
-            )}
-          >
-            {children}
-          </AppText>
-        ) : (
-          children
-        )}
+        {React.Children.map(children, (child) => {
+          if (typeof child === "string" || typeof child === "number") {
+            return (
+              <AppText
+                className={cn(
+                  "font-semibold text-base",
+                  size === "lg" && "text-lg",
+                  size === "sm" && "text-sm text-center",
+                  variant === "default" && "text-white",
+                  isSecondary && "text-surface-900",
+                  isOutline && "text-surface-900",
+                  isGhost && "text-surface-900",
+                  isDestructive && "text-white",
+                  textClassName,
+                )}
+              >
+                {child}
+              </AppText>
+            );
+          }
+          return child;
+        })}
       </Pressable>
     );
   },
