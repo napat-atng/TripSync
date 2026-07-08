@@ -153,6 +153,7 @@ export default function SurveyRespondScreen() {
                     <View>
                       <TextInput
                         className="h-12 rounded-lg border border-slate-300 px-4 text-base bg-slate-50"
+                        style={{ fontFamily: "Sarabun_400Regular" }}
                         placeholder="คำตอบของคุณ"
                         value={String(value ?? "")}
                         onChangeText={onChange}
@@ -175,7 +176,7 @@ export default function SurveyRespondScreen() {
                             <Pressable
                               key={opt}
                               className={`mr-2 mb-2 rounded-full px-4 py-2 border ${
-                                isSelected ? "bg-teal-600 border-teal-600" : "bg-slate-50 border-slate-300"
+                                isSelected ? "bg-primary-600 border-primary-600" : "bg-slate-50 border-slate-300"
                               }`}
                               onPress={() => {
                                 if (isSelected) {
@@ -202,6 +203,7 @@ export default function SurveyRespondScreen() {
                     <View>
                       <TextInput
                         className="h-12 rounded-lg border border-slate-300 px-4 text-base bg-slate-50"
+                        style={{ fontFamily: "Sarabun_400Regular" }}
                         placeholder="งบประมาณต่อคน (บาท)"
                         value={value ? String(value) : ""}
                         onChangeText={(text) => onChange(text ? Number(text) : null)}
@@ -212,11 +214,12 @@ export default function SurveyRespondScreen() {
                   );
                 }
 
-                // text (fallback)
+                // fallback text
                 return (
                   <View>
                     <TextInput
                       className="h-12 rounded-lg border border-slate-300 px-4 text-base bg-slate-50"
+                      style={{ fontFamily: "Sarabun_400Regular" }}
                       placeholder="คำตอบของคุณ"
                       value={String(value ?? "")}
                       onChangeText={onChange}
@@ -232,7 +235,7 @@ export default function SurveyRespondScreen() {
 
       <View className="border-t border-slate-200 bg-white p-4 pb-8">
         <Pressable
-          className="h-14 items-center justify-center rounded-lg bg-teal-600"
+          className="h-14 items-center justify-center rounded-lg bg-primary-600"
           onPress={handleSubmit(onSubmit)}
           disabled={isSubmitting}
         >

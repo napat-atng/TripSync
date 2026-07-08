@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
-import { Pressable, Text, type PressableProps, View, ActivityIndicator } from "react-native";
+import { Pressable, type PressableProps, View, ActivityIndicator } from "react-native";
 import { cn } from "../../lib/utils";
+import { AppText } from "../AppText";
 
 export interface ButtonProps extends PressableProps {
   variant?: "default" | "secondary" | "outline" | "ghost" | "destructive";
@@ -27,25 +28,25 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
           size === "sm" && "h-10 px-4",
           size === "lg" && "h-16 px-8",
           size === "icon" && "h-14 w-14",
-          variant === "default" && "bg-primary-600 shadow-sm active:bg-primary-700",
+          variant === "default" && "bg-primary-600 active:bg-primary-700",
           isSecondary && "bg-surface-100 active:bg-surface-200",
           isOutline && "border border-surface-300 bg-white active:bg-surface-50",
           isGhost && "active:bg-surface-100",
-          isDestructive && "bg-red-500 shadow-sm active:bg-red-600",
+          isDestructive && "bg-red-500 active:bg-red-600",
           (disabled || loading) && "opacity-50",
-          className
+          className,
         )}
         disabled={disabled || loading}
         {...props}
       >
         {loading && (
-          <ActivityIndicator 
-            color={variant === "default" || variant === "destructive" ? "white" : "#4f46e5"} 
-            className="mr-2" 
+          <ActivityIndicator
+            color={variant === "default" || variant === "destructive" ? "white" : "#D85A30"}
+            style={{ marginRight: 8 }}
           />
         )}
         {typeof children === "string" ? (
-          <Text
+          <AppText
             className={cn(
               "font-semibold text-base",
               size === "lg" && "text-lg",
@@ -55,17 +56,17 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
               isOutline && "text-surface-900",
               isGhost && "text-surface-900",
               isDestructive && "text-white",
-              textClassName
+              textClassName,
             )}
           >
             {children}
-          </Text>
+          </AppText>
         ) : (
           children
         )}
       </Pressable>
     );
-  }
+  },
 );
 
 Button.displayName = "Button";

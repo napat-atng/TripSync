@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
-import { TextInput, View, Text, type TextInputProps } from "react-native";
+import { TextInput, View, type TextInputProps } from "react-native";
 import { cn } from "../../lib/utils";
+import { AppText } from "../AppText";
 
 export interface InputProps extends TextInputProps {
   className?: string;
@@ -14,9 +15,9 @@ const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
     return (
       <View className="flex flex-col gap-1.5 mb-4">
         {label && (
-          <Text className="text-sm font-medium text-surface-700 ml-1">
+          <AppText className="text-sm font-medium text-surface-700 ml-1">
             {label}
-          </Text>
+          </AppText>
         )}
         <View className="relative justify-center">
           {icon && (
@@ -31,20 +32,21 @@ const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
               "focus:border-primary-500 focus:bg-white",
               icon && "pl-12",
               error && "border-red-500 focus:border-red-500",
-              className
+              className,
             )}
             placeholderTextColor="#94a3b8"
+            style={{ fontFamily: "Sarabun_400Regular" }}
             {...props}
           />
         </View>
         {error && (
-          <Text className="text-sm text-red-500 ml-1 mt-1">
+          <AppText className="text-sm text-red-500 ml-1 mt-1">
             {error}
-          </Text>
+          </AppText>
         )}
       </View>
     );
-  }
+  },
 );
 
 Input.displayName = "Input";

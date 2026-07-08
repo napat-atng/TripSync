@@ -139,7 +139,7 @@ export default function SurveyBuilderScreen() {
 
     return (
       <ScaleDecorator>
-        <View className={`mb-3 flex-row rounded-xl border p-4 ${isActive ? "bg-teal-50 border-teal-200" : "bg-white border-slate-200"}`}>
+        <View className={`mb-3 flex-row rounded-xl border p-4 ${isActive ? "bg-primary-50 border-primary-200" : "bg-white border-slate-200"}`}>
           <Pressable onLongPress={drag} disabled={isActive} className="mr-3 justify-center">
             <AppText className="text-2xl text-slate-400">≡</AppText>
           </Pressable>
@@ -154,6 +154,7 @@ export default function SurveyBuilderScreen() {
             </View>
             <TextInput
               className="h-10 border-b border-slate-200 text-base text-slate-900"
+              style={{ fontFamily: "Sarabun_400Regular" }}
               value={item.question}
               onChangeText={(text) => updateQuestionText(item.id, text)}
               placeholder="พิมพ์คำถามของคุณ"
@@ -166,6 +167,7 @@ export default function SurveyBuilderScreen() {
                   <View key={`${item.id}-option-${index}`} className="mb-2 flex-row items-center">
                     <TextInput
                       className="mr-2 h-10 flex-1 rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm text-slate-900"
+                      style={{ fontFamily: "Sarabun_400Regular" }}
                       value={option}
                       onChangeText={(text) => updateQuestionOption(item.id, index, text)}
                       placeholder={`ตัวเลือก ${index + 1}`}
@@ -219,13 +221,13 @@ export default function SurveyBuilderScreen() {
 
       <View className="flex-row items-center justify-between border-t border-slate-200 bg-white p-4 pb-8">
         <Pressable
-          className="flex-1 mr-2 h-12 items-center justify-center rounded-lg border border-teal-600 bg-teal-50"
+          className="flex-1 mr-2 h-12 items-center justify-center rounded-lg border border-primary-600 bg-primary-50"
           onPress={() => setAddModalVisible(true)}
         >
-          <AppText className="font-semibold text-teal-700">+ เพิ่มคำถาม</AppText>
+          <AppText className="font-semibold text-primary-700">+ เพิ่มคำถาม</AppText>
         </Pressable>
         <Pressable
-          className="flex-1 ml-2 h-12 items-center justify-center rounded-lg bg-teal-600"
+          className="flex-1 ml-2 h-12 items-center justify-center rounded-lg bg-primary-600"
           onPress={handleSave}
           disabled={isSaving}
         >

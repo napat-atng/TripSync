@@ -130,14 +130,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "#ffffff" },
-          headerTintColor: "#0f172a",
+          headerStyle: { backgroundColor: "#4A1B0C" },
+          headerTintColor: "#ffffff",
           headerTitleStyle: {
             fontFamily: HEADER_FONT,
             fontSize: 17,
-          },
-          headerBackTitleStyle: {
-            fontFamily: "Sarabun_400Regular",
           },
           headerShadowVisible: false,
           headerBackTitle: "กลับ",
