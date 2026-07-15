@@ -21,6 +21,7 @@ import {
   X,
   Calendar,
   Minus,
+  MessageCircle,
 } from "lucide-react-native";
 
 import { AppText } from "../../../../components/AppText";
@@ -415,7 +416,22 @@ export default function ItineraryScreen() {
                     <AppText className="flex-1 pr-2 text-base font-semibold text-surface-900">
                       {event.title}
                     </AppText>
-                    {isLeader && <Pencil size={16} color="#94a3b8" />}
+                    <View className="flex-row items-center gap-4">
+                      <Pressable
+                        hitSlop={8}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          router.push(`/trips/${tripId}/discussion?eventId=${event.id}&eventName=${encodeURIComponent(event.title)}` as any);
+                        }}
+                      >
+                        <MessageCircle size={18} color="#4f46e5" />
+                      </Pressable>
+                      {isLeader && (
+                        <Pressable hitSlop={8} onPress={() => openEditModal(event)}>
+                          <Pencil size={16} color="#94a3b8" />
+                        </Pressable>
+                      )}
+                    </View>
                   </View>
                   {event.description && (
                     <AppText className="mt-1 text-sm text-surface-500">{event.description}</AppText>

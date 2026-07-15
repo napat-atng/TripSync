@@ -7,7 +7,7 @@ export async function getTasksByTrip(tripId: string): Promise<TripTask[]> {
     .select(
       `
       *,
-      trip_members(display_name)
+      trip_members!trip_tasks_assigned_to_fkey(display_name)
     `,
     )
     .eq("trip_id", tripId)
@@ -36,12 +36,15 @@ export async function addTask(
     .select(
       `
       *,
-      trip_members(display_name)
+      trip_members!trip_tasks_assigned_to_fkey(display_name)
     `,
     )
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("[addTask] Supabase error:", error);
+    throw error;
+  }
   return mapTask(data);
 }
 

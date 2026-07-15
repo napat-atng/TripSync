@@ -44,10 +44,19 @@ export default function TodoScreen() {
         getTasksByTrip(tripId),
         getMembersByTrip(tripId),
       ]);
-      setMyMemberId(mid ?? null);
+
+      // Fallback: if getMyMemberId returns undefined, find our member from the full list
+      const resolvedMid =
+        mid ??
+        memberData.find((m) => m.user_id === user?.id)?.id ??
+        null;
+
+      console.log("[TodoScreen] load => myMemberId:", resolvedMid, "userId:", user?.id);
+      setMyMemberId(resolvedMid);
       setTasks(taskData);
       setMembers(memberData);
-    } catch {
+    } catch (err) {
+      console.error("[TodoScreen] load error:", err);
       Alert.alert("ข้อผิดพลาด", "ไม่สามารถโหลดรายการได้");
     } finally {
       setIsLoading(false);
@@ -75,7 +84,12 @@ export default function TodoScreen() {
   };
 
   const handleAddTask = async () => {
-    if (!tripId || !myMemberId || !newTitle.trim()) return;
+    console.log("[handleAddTask] called. title:", newTitle, "myMemberId:", myMemberId, "tripId:", tripId);
+    if (!newTitle.trim()) return;
+    if (!tripId || !myMemberId) {
+      Alert.alert("ข้อผิดพลาด", "ไม่พบข้อมูลสมาชิกของคุณในทริปนี้ (myMemberId = null) ลองแรหน้าจอแล้วเปิดใหม่อีกครั้ง");
+      return;
+    }
     setIsSaving(true);
     try {
       const created = await addTask(tripId, myMemberId, newTitle.trim(), newAssignee);
@@ -83,8 +97,10 @@ export default function TodoScreen() {
       setNewTitle("");
       setNewAssignee(null);
       setAddModalVisible(false);
-    } catch {
-      Alert.alert("ข้อผิดพลาด", "ไม่สามารถเพิ่มรายการได้");
+    } catch (err: any) {
+      console.error("[handleAddTask] error:", err);
+      const msg = err?.message ?? err?.error_description ?? "ไม่สามารถเพิ่มรายการได้";
+      Alert.alert("ข้อผิดพลาด", msg);
     } finally {
       setIsSaving(false);
     }
@@ -162,6 +178,12 @@ export default function TodoScreen() {
             <AppText className="mt-1 text-center text-sm text-surface-500">
               เพิ่มของที่ต้องเตรียม หรืองานที่ต้องมอบหมายกันในทริป
             </AppText>
+            <Pressable
+              onPress={() => setAddModalVisible(true)}
+              className="mt-5 rounded-xl bg-primary-600 px-6 py-3"
+            >
+              <AppText className="font-semibold text-white">เพิ่มรายการแรก</AppText>
+            </Pressable>
           </View>
         }
         renderItem={({ item }) => (
@@ -201,7 +223,7 @@ export default function TodoScreen() {
       <Pressable
         className="absolute bottom-8 right-6 h-14 w-14 items-center justify-center rounded-full bg-primary-600 shadow-lg"
         onPress={() => setAddModalVisible(true)}
-        style={{ elevation: 4 }}
+        style={{ elevation: 8, zIndex: 50 }}
       >
         <Plus size={26} color="#fff" />
       </Pressable>

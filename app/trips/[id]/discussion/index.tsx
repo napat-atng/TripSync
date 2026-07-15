@@ -24,7 +24,7 @@ function formatTime(iso: string) {
 }
 
 export default function DiscussionScreen() {
-  const { id: tripId } = useLocalSearchParams<{ id: string }>();
+  const { id: tripId, eventId, eventName } = useLocalSearchParams<{ id: string; eventId?: string; eventName?: string }>();
   const user = useAuth((s) => s.user);
 
   const comments = useCommentStore((s) => s.comments);
@@ -41,9 +41,10 @@ export default function DiscussionScreen() {
   const load = useCallback(async () => {
     if (!tripId) return;
     try {
+      const targetEventId = eventId ?? null;
       const [mid, data] = await Promise.all([
         getMyMemberId(tripId, user?.id),
-        getCommentsByTrip(tripId, null),
+        getCommentsByTrip(tripId, targetEventId),
       ]);
       setMyMemberId(mid ?? null);
       setComments(data);
@@ -60,12 +61,13 @@ export default function DiscussionScreen() {
     }, [load]),
   );
 
-  // Realtime: general trip thread only (itinerary_event_id = null scope)
+  // Realtime
   useEffect(() => {
     if (!tripId) return;
-    const unsubscribe = subscribeToComments(tripId, load, null);
+    const targetEventId = eventId ?? null;
+    const unsubscribe = subscribeToComments(tripId, load, targetEventId);
     return unsubscribe;
-  }, [tripId, load]);
+  }, [tripId, eventId, load]);
 
   useEffect(() => {
     if (comments.length > 0) {
@@ -80,7 +82,8 @@ export default function DiscussionScreen() {
     setDraft("");
     setIsSending(true);
     try {
-      const created = await addComment(tripId, myMemberId, message, null);
+      const targetEventId = eventId ?? null;
+      const created = await addComment(tripId, myMemberId, message, targetEventId);
       appendComment(created);
     } catch {
       Alert.alert("ข้อผิดพลาด", "ส่งข้อความไม่สำเร็จ");
@@ -105,7 +108,7 @@ export default function DiscussionScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <Stack.Screen options={{ title: "พูดคุยทริป" }} />
+      <Stack.Screen options={{ title: eventName ? `คุยเรื่อง: ${eventName}` : "พูดคุยทริป" }} />
 
       <FlatList
         ref={listRef}
