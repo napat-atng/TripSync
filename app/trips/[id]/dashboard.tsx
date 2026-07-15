@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { View, ActivityIndicator, ScrollView, Pressable, Alert, Platform } from "react-native";
 import { useLocalSearchParams, Stack, router, useFocusEffect } from "expo-router";
 import * as Clipboard from "expo-clipboard";
-import { Calendar, Users, CheckCircle2, Clock, CreditCard, ListTodo, Share2, Trash2, BellRing, MapPin } from "lucide-react-native";
+import { Calendar, Users, CheckCircle2, Clock, CreditCard, ListTodo, Share2, Trash2, BellRing, MapPin, Route, MessageCircle, ListChecks } from "lucide-react-native";
 
 import { AppText } from "../../../components/AppText";
 import { InviteSheet } from "../../../components/InviteSheet";
@@ -426,6 +426,36 @@ export default function TripDashboardScreen() {
               + เพิ่มรายการ
             </Button>
           </View>
+        </Section>
+
+        {/* ---------------- ITINERARY ---------------- */}
+        <Section title="แผนการเดินทาง" icon={<Route size={20} color="#4f46e5" />}>
+          <AppText className="mb-5 text-sm text-surface-500">
+            จัดตารางกิจกรรมรายวัน ไม่ต้องสลับไปเปิด Google Sheets อีกต่อไป
+          </AppText>
+          <Button onPress={() => router.push(`/trips/${trip.id}/itinerary` as any)}>
+            เปิดแผนการเดินทาง
+          </Button>
+        </Section>
+
+        {/* ---------------- DISCUSSION ---------------- */}
+        <Section title="พูดคุยทริป" icon={<MessageCircle size={20} color="#4f46e5" />}>
+          <AppText className="mb-5 text-sm text-surface-500">
+            คุยกับเพื่อนในทริปโดยตรง ไม่ต้องย้ายไปคุยใน LINE/WhatsApp
+          </AppText>
+          <Button variant="secondary" onPress={() => router.push(`/trips/${trip.id}/discussion` as any)}>
+            เปิดห้องสนทนา
+          </Button>
+        </Section>
+
+        {/* ---------------- TO-DO / PACKING ---------------- */}
+        <Section title="เช็คลิสต์ทริป" icon={<ListChecks size={20} color="#4f46e5" />}>
+          <AppText className="mb-5 text-sm text-surface-500">
+            แบ่งงานและของที่ต้องเตรียม แล้วติดตามความคืบหน้ากันได้
+          </AppText>
+          <Button variant="secondary" onPress={() => router.push(`/trips/${trip.id}/todo` as any)}>
+            เปิดเช็คลิสต์
+          </Button>
         </Section>
 
         {/* ---------------- MEMBERS ---------------- */}
