@@ -37,6 +37,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Local Supabase command output (may contain development credentials)
+.supabase-*.log
+
 # generated native folders
 /ios
 /android
