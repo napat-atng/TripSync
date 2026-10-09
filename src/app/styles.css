@@ -1,0 +1,31 @@
+:root { color: #242b3e; background: #f6f7fb; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: #f6f7fb; line-height: 1.6; }
+a { color: inherit; }
+button, input, textarea { font: inherit; }
+.wrap-text, h1, h2, h3 { overflow-wrap: anywhere; }
+.sidebar { position: fixed; inset: 0 auto 0 0; width: 240px; padding: 32px 24px; background: white; border-right: 1px solid #e9ecf3; display: flex; flex-direction: column; }
+.brand-link { display: flex; gap: 10px; align-items: center; text-decoration: none; font-size: 24px; font-weight: 700; color: #202948; }
+.side-navigation { display: grid; gap: 8px; }
+.navigation-link { min-height: 48px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-radius: 14px; color: #657087; text-decoration: none; }
+.navigation-link.active { background: #eef0ff; color: #4f46e5; font-weight: 600; }
+.navigation-link:hover { background: #f2f3ff; }
+.sidebar-note { margin-top: auto; }
+.main-content { margin-left: 240px; padding: 36px 20px 60px; min-width: 0; }
+.hero-card { background: linear-gradient(120deg, #202948, #35477d); color: white; border: 0; }
+.hero-card h1 { font-size: clamp(26px, 3.2vw, 38px); line-height: 1.45; }
+.brand { font-weight: 700; letter-spacing: -.5px; font-size: 24px; }
+.login-page { max-width: 580px; padding-top: 48px; padding-bottom: 48px; }
+.mobile-header, .bottom-navigation { display: none; }
+.skip-link { position: fixed; left: 16px; top: -100px; z-index: 1000; padding: 12px; background: white; }
+.skip-link:focus { top: 16px; }
+:focus-visible { outline: 3px solid #818cf8; outline-offset: 3px; }
+@media (max-width: 767px) {
+  .sidebar { display: none; }
+  .mobile-header { display: block; background: white; padding: 16px 20px; border-bottom: 1px solid #e9ecf3; }
+  .main-content { margin: 0; padding: 24px 0 calc(110px + env(safe-area-inset-bottom)); }
+  .bottom-navigation { position: fixed; inset: auto 0 0; z-index: 100; display: flex; justify-content: space-around; background: white; border-top: 1px solid #e9ecf3; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); }
+  .bottom-navigation .navigation-link { flex: 1; flex-direction: column; gap: 4px; font-size: 12px; padding: 8px; }
+  .login-page { padding-top: 24px; padding-bottom: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }

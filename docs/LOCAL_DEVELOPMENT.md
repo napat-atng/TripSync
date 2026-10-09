@@ -56,6 +56,21 @@ Step 2 introduces and tests the new schema, RLS, generated types, and Google
 PKCE login. Google OAuth requires separate provider credentials and callback
 configuration; it is not proven by a successful local stack startup.
 
+## Local Google OAuth
+
+Create a separate Google OAuth client of type Web application for development.
+Add `http://127.0.0.1:54321/auth/v1/callback` as an authorized redirect URI.
+If the Google consent app is in testing mode, add the accounts used for testing
+to its test users. Store `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and
+`SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET` in the ignored root `.env`.
+The CLI loads these server-side values when starting the local stack. Restart
+with `stop` followed by `start` after changing them; no reset is needed.
+
+The Google callback above is handled by Supabase Auth. The frontend callback
+`http://localhost:5173/auth/callback` is a separate step that exchanges the PKCE
+code and restores the intended app route. Never expose the Google client secret
+through a `VITE_` or `EXPO_PUBLIC_` variable.
+
 Reference: [Supabase local development](https://supabase.com/docs/guides/local-development).
 
 ## Step 1 verification (2026-10-09)

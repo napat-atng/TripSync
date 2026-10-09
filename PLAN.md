@@ -124,4 +124,5 @@
 ## 6. บันทึกความคืบหน้า
 
 - ขั้นตอน 1 เสร็จแล้ว (2026-10-09): เก็บโค้ด Expo เดิมด้วย tag `expo-before-web-migration`, เตรียม local Supabase และทดสอบ reset สำเร็จครบ 13 migrations โดยไม่แตะ cloud ดูผลตรวจและคำสั่งใน `docs/LOCAL_DEVELOPMENT.md`
-- ขั้นตอน 2–8: ยังไม่เสร็จ
+- ขั้นตอน 2 เสร็จแล้ว (2026-10-09): สร้าง Vite/Mantine/PWA, responsive shell, routes, Google PKCE และ schema/RLS/types บน local ผ่าน unit tests 13 เคสและ SQL tests 17 เคส ผู้ใช้ยืนยัน Google login สำเร็จและตรวจพบ Google identity/Auth account/profile ใน local ดู `docs/STEP_2_VERIFICATION.md` สำหรับผลตรวจและเกณฑ์ที่ยังต้องตรวจในขั้น preview
+- ขั้นตอน 3–8: ยังไม่เสร็จ

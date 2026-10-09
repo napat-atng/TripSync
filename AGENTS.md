@@ -1,32 +1,34 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-TripSync is an Expo/React Native application using TypeScript, Expo Router, Supabase, Zustand, and NativeWind.
-- `app/` contains file-based routes, including `(auth)`, `(tabs)`, and trip screens under `trips/[id]/`.
-- `components/` holds shared UI; `components/ui/` contains primitives such as buttons and inputs.
-- `lib/` contains Supabase access and domain helpers; `hooks/` contains reusable React hooks.
-- `store/` contains Zustand stores; `types/` defines domain and database types.
-- `assets/` holds icons and splash images. `supabase/migrations/` holds SQL migrations; `supabase/functions/` holds Deno Edge Functions.
+TripSync is a responsive React/TypeScript PWA built with Vite, Mantine, React Router, TanStack Query, and Supabase.
+- `src/app/` contains routing, providers, the responsive shell, theme, and PWA controls.
+- `src/features/` groups screens, hooks, services, and validation by feature.
+- `src/shared/` contains reusable feedback UI, navigation utilities, the Supabase client, and generated database types.
+- `public/` contains install icons and Cloudflare Pages configuration.
+- `supabase/migrations/`, `supabase/tests/`, and `supabase/functions/` contain database changes, pgTAP tests, and Edge Functions.
+- `legacy/expo/` archives the unsupported Expo app. Add new features to `src/`.
 
 ## Build, Test, and Development Commands
-- `npm ci`: install dependencies from `package-lock.json`.
-- `npm start`: start the Expo development server.
-- `npm run android` / `npm run ios`: start Expo for the corresponding device or simulator; iOS simulators require macOS.
-- `npm run web`: run the web development target.
-- `npm run typecheck`: run TypeScript checking without emitting files.
-
-No build or automated test script is currently configured in `package.json`.
+Use `npm ci` to install locked dependencies. On Windows, use `npm.cmd` if PowerShell blocks npm.
+- `npm run dev`: start Vite on port 5173.
+- `npm run typecheck`: check strict TypeScript.
+- `npm test`: run Vitest unit tests.
+- `npm run build`: typecheck and produce `dist/`, including the service worker.
+- `npm run preview`: serve the production build locally.
+- `npm run db:start` / `db:stop`: manage local Supabase.
+- `npm run db:reset`: reset only the local database.
+- `npm run db:test`: run RPC/RLS integration tests.
+- `npm run db:types`: regenerate types from the local `tripsync` schema.
 
 ## Coding Style & Naming Conventions
-Use strict TypeScript, two-space indentation, double quotes, and semicolons, matching surrounding code. Use PascalCase for component files (`InviteSheet.tsx`), camelCase for functions, and `use` prefixes for hooks and stores (`useAuth`, `useTaskStore`). Follow Expo Router route naming, including `[id]` and `_layout.tsx`.
-
-Reuse `AppText` for Sarabun typography and NativeWind classes with tokens from `tailwind.config.js`. Keep data access in `lib/` and shared state in `store/`. No ESLint or Prettier configuration is present.
+Use two-space indentation, double quotes, semicolons, and strict TypeScript. Name components in PascalCase and hooks with a `use` prefix. Use Mantine, Anuphan, and existing theme tokens. Screens call feature services rather than querying Supabase directly. Keep server data in TanStack Query; validate inputs with Zod. Never cast Supabase to `any`. No ESLint or Prettier configuration is currently present.
 
 ## Testing Guidelines
-No test framework, test suite, or coverage threshold is configured. Run `npm run typecheck` and manually exercise affected flows on the relevant Expo targets. For trip changes, verify authentication, membership permissions, persistence, and error handling. Include reproduction steps and validation results in the pull request. Establish a test runner and naming convention when introducing automated tests.
+Name unit tests `*.test.ts`; place pgTAP tests in `supabase/tests/`. No coverage threshold is configured. Verify changed behavior, cross-room permissions, error handling, and persistence. Check responsive layouts at 320, 390, 768, and 1440px. Browser simulation does not replace real Android/iPhone testing.
 
 ## Commit & Pull Request Guidelines
-Recent commits use short, informal subjects such as `fix ui` and `update notification`; no enforced convention is evident. Write concise imperative subjects identifying the affected feature. Keep changes focused. Pull requests should explain the change, link relevant issues, list validation performed, and include screenshots for UI changes. Call out schema or configuration changes.
+History uses short subjects such as `fix ui`. Prefer focused imperative subjects. Describe behavior, linked issues, validation, and schema changes; include screenshots for UI changes. Commit and push after each completed implementation step in `PLAN.md`.
 
 ## Security & Configuration
-Copy `.env.example` to `.env` and configure `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. Public Expo variables are client-visible; keep service-role keys and provider secrets in server-side configuration. Never commit secrets. Add schema changes as timestamped SQL migrations and review row-level security policies.
+Keep secrets in ignored environment files. Only Supabase URL and publishable key use `VITE_` prefixes. Use local Supabase during development; cloud migrations belong to the planned cutover. Review RLS and regenerate types after schema changes. Never cache private API responses in the service worker.

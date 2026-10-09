@@ -40,6 +40,10 @@ yarn-error.*
 # Local Supabase command output (may contain development credentials)
 .supabase-*.log
 
+# Browser verification artifacts
+.playwright-cli/
+output/playwright/
+
 # generated native folders
 /ios
 /android
