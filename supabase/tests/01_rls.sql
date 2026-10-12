@@ -51,8 +51,8 @@ begin
   if visible_count <> 1 then raise exception 'group creator was not made admin'; end if;
   insert into public.trips (group_id, organizer_id, title, vote_deadline)
     values (created_group, '00000000-0000-0000-0000-0000000000a1',
-            'Created with RLS', now() + interval '1 day');
-  select id into created_trip from public.trips where group_id = created_group;
+            'Created with RLS', now() + interval '1 day')
+    returning id into created_trip;
   select count(*) into visible_count from public.trip_participants
     where trip_id = created_trip and user_id = '00000000-0000-0000-0000-0000000000a1';
   if visible_count <> 1 then raise exception 'trip organizer was not made participant'; end if;

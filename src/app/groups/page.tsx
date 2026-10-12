@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createGroup } from "@/features/groups/actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -33,7 +34,7 @@ export default async function GroupsPage({
         <section aria-label="รายการกลุ่ม" className="group-list">
           <h2>กลุ่มที่เข้าร่วม</h2>
           {groupsError ? <p>โหลดกลุ่มไม่สำเร็จ กรุณาลองใหม่</p> : groups?.length ? (
-            <ul>{groups.map((group) => <li key={group.id}><strong>{group.name}</strong>{group.description && <span>{group.description}</span>}</li>)}</ul>
+            <ul>{groups.map((group) => <li key={group.id}><Link href={`/groups/${group.id}`}><strong>{group.name}</strong></Link>{group.description && <span>{group.description}</span>}</li>)}</ul>
           ) : <p>ยังไม่มีกลุ่ม เริ่มจากสร้างกลุ่มแรกด้านบน</p>}
         </section>
         <form action="/auth/sign-out" method="post">
