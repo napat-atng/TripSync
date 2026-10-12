@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createGroupInvite, type InviteActionState } from "@/features/access/invite-actions";
+import { createInvite, type InviteActionState } from "@/features/access/invite-actions";
 
 const initialState: InviteActionState = { path: null, error: null };
 
-export function CreateGroupInvite({ groupId }: { groupId: string }) {
-  const [state, formAction, pending] = useActionState(createGroupInvite, initialState);
+export function CreateInvite({ groupId, tripId }: { groupId: string; tripId?: string }) {
+  const [state, formAction, pending] = useActionState(createInvite, initialState);
   const [copied, setCopied] = useState(false);
 
   async function copyLink(): Promise<void> {
@@ -17,10 +17,11 @@ export function CreateGroupInvite({ groupId }: { groupId: string }) {
 
   return (
     <section className="invite-panel">
-      <h2>ชวนเพื่อนเข้ากลุ่ม</h2>
-      <p>ลิงก์ใช้ได้ 7 วัน เปิดลิงก์แล้วเพื่อนจะเห็นชื่อกลุ่มก่อนยืนยันเข้าร่วม</p>
+      <h2>{tripId ? "ชวนเพื่อนเข้าทริป" : "ชวนเพื่อนเข้ากลุ่ม"}</h2>
+      <p>ลิงก์ใช้ได้ 7 วัน เปิดลิงก์แล้วเพื่อนจะเห็นคำเชิญก่อนยืนยันเข้าร่วม</p>
       <form action={formAction}>
         <input type="hidden" name="groupId" value={groupId} />
+        {tripId && <input type="hidden" name="tripId" value={tripId} />}
         <button className="primary-button" type="submit" disabled={pending}>
           {pending ? "กำลังสร้าง..." : "สร้างลิงก์เชิญ"}
         </button>

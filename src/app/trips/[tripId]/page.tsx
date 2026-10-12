@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { CreateInvite } from "@/components/CreateInvite";
+import { revokeInvite } from "@/features/access/invite-actions";
+import { addTripParticipant, removeTripParticipant, respondToTripInvitation } from "@/features/trips/participant-actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export default async function TripPage({ params }: { params: Promise<{ tripId: string }> }) {
+export default async function TripPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ tripId: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { tripId } = await params;
+  const { error: pageError } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const { data: auth, error: authError } = await supabase.auth.getClaims();
   if (authError || !auth?.claims?.sub) {
@@ -15,6 +25,25 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
     .eq("id", tripId)
     .maybeSingle();
   if (error || !trip) notFound();
+  const [{ data: participants }, { data: groupMembers }] = await Promise.all([
+    supabase.from("trip_participants").select("user_id, invitation_status").eq("trip_id", tripId),
+    supabase.from("group_members").select("user_id").eq("group_id", trip.group_id),
+  ]);
+  const userIds = groupMembers?.map((member) => member.user_id) ?? [];
+  const { data: profiles } = userIds.length
+    ? await supabase.from("profiles").select("user_id, display_name").in("user_id", userIds)
+    : { data: [] };
+  const names = new Map(profiles?.map((profile) => [profile.user_id, profile.display_name]));
+  const participantIds = new Set(participants?.map((person) => person.user_id));
+  const availableMembers = groupMembers?.filter((member) => !participantIds.has(member.user_id)) ?? [];
+  const myParticipation = participants?.find((person) => person.user_id === auth.claims.sub);
+  const isOrganizer = trip.organizer_id === auth.claims.sub;
+  const { data: inviteLinks } = isOrganizer
+    ? await supabase.from("invite_links")
+        .select("id, expires_at, revoked_at")
+        .eq("trip_id", tripId)
+        .order("created_at", { ascending: false })
+    : { data: null };
 
   return (
     <main className="page">
@@ -24,7 +53,64 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
         {trip.description && <p>{trip.description}</p>}
         <p>สถานะ: {trip.status === "draft" ? "กำลังเตรียมตัวเลือก" : trip.status}</p>
         <p>ปิดโหวต: {new Date(trip.vote_deadline).toLocaleString("th-TH", { timeZone: trip.timezone })}</p>
-        <p>กำลังเพิ่มตัวเลือกวัน สถานที่ และระบบโหวต</p>
+        {pageError && <p className="form-note" role="alert">{pageError === "revoke" ? "ยกเลิกลิงก์ไม่สำเร็จ" : "บันทึกข้อมูลผู้ร่วมทริปไม่สำเร็จ"} กรุณาลองอีกครั้ง</p>}
+        {!isOrganizer && myParticipation && trip.status !== "cancelled" && trip.status !== "completed" && (
+          <section className="group-list">
+            <h2>คำเชิญของคุณ</h2>
+            <p>สถานะ: {myParticipation.invitation_status}</p>
+            <form action={respondToTripInvitation} className="inline-actions">
+              <input type="hidden" name="tripId" value={tripId} />
+              <button className="primary-button" type="submit" name="status" value="interested">สนใจไป</button>
+              <button className="text-button" type="submit" name="status" value="declined">ไม่ร่วมทริป</button>
+            </form>
+          </section>
+        )}
+        {isOrganizer && trip.status !== "cancelled" && trip.status !== "completed" && (
+          <CreateInvite groupId={trip.group_id} tripId={trip.id} />
+        )}
+        {isOrganizer && !!inviteLinks?.length && <section className="group-list">
+          <h2>ลิงก์เชิญทริป</h2>
+          <ul>{inviteLinks.map((link) => <li key={link.id}>
+            <strong>{link.revoked_at ? "ยกเลิกแล้ว" : "ยังไม่เพิกถอน"}</strong>
+            <span>หมดอายุ {new Date(link.expires_at).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</span>
+            {!link.revoked_at && <form action={revokeInvite}>
+              <input type="hidden" name="groupId" value={trip.group_id} />
+              <input type="hidden" name="tripId" value={tripId} />
+              <input type="hidden" name="inviteId" value={link.id} />
+              <button className="text-button" type="submit">ยกเลิกลิงก์นี้</button>
+            </form>}
+          </li>)}</ul>
+        </section>}
+        <section className="group-list">
+          <h2>ผู้ร่วมทริป</h2>
+          {participants?.length ? <ul>{participants.map((person) => <li key={person.user_id}>
+            <strong>{names.get(person.user_id) ?? person.user_id.slice(0, 8)}</strong>
+            <span>{person.invitation_status}</span>
+            {isOrganizer && trip.status === "draft" && person.user_id !== auth.claims.sub && (
+              <form action={removeTripParticipant}>
+                <input type="hidden" name="tripId" value={tripId} />
+                <input type="hidden" name="userId" value={person.user_id} />
+                <button className="text-button" type="submit">นำออก</button>
+              </form>
+            )}
+          </li>)}</ul> : <p>ยังไม่มีผู้ร่วมทริป</p>}
+        </section>
+        {isOrganizer && trip.status === "draft" && !!availableMembers.length && (
+          <section className="group-list">
+            <h2>ชวนสมาชิกกลุ่มเข้าทริป</h2>
+            <form action={addTripParticipant} className="group-form">
+              <input type="hidden" name="tripId" value={tripId} />
+              <label htmlFor="participant-user">เลือกสมาชิก</label>
+              <select id="participant-user" name="userId" required>
+                {availableMembers.map((member) => <option key={member.user_id} value={member.user_id}>
+                  {names.get(member.user_id) ?? member.user_id.slice(0, 8)}
+                </option>)}
+              </select>
+              <button className="primary-button" type="submit">ส่งคำเชิญในทริป</button>
+            </form>
+          </section>
+        )}
+        <section className="group-list"><h2>ตัวเลือกและโหวต</h2><p>กำลังเพิ่มตัวเลือกวัน สถานที่ และระบบโหวต</p></section>
       </div>
     </main>
   );

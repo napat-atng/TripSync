@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CreateGroupInvite } from "@/components/CreateGroupInvite";
-import { revokeGroupInvite } from "@/features/access/invite-actions";
+import { CreateInvite } from "@/components/CreateInvite";
+import { revokeInvite } from "@/features/access/invite-actions";
 import { createTrip } from "@/features/trips/actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -47,7 +47,7 @@ export default async function GroupPage({
         {group.description && <p>{group.description}</p>}
         <p>สมาชิก {members?.length ?? 0} คน</p>
         {pageError === "revoke" && <p className="form-note" role="alert">ยกเลิกลิงก์ไม่สำเร็จ กรุณาลองอีกครั้ง</p>}
-        {membership?.role === "admin" && <CreateGroupInvite groupId={group.id} />}
+        {membership?.role === "admin" && <CreateInvite groupId={group.id} />}
         {membership?.role === "admin" && !!inviteLinks?.length && (
           <section className="group-list">
             <h2>ลิงก์เชิญที่สร้างไว้</h2>
@@ -56,7 +56,7 @@ export default async function GroupPage({
               return <li key={link.id}>
                 <strong>{active ? "ยังไม่เพิกถอน" : "ยกเลิกแล้ว"}</strong>
                 <span>หมดอายุ {new Date(link.expires_at).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</span>
-                {active && <form action={revokeGroupInvite}>
+                {active && <form action={revokeInvite}>
                   <input type="hidden" name="groupId" value={groupId} />
                   <input type="hidden" name="inviteId" value={link.id} />
                   <button className="text-button" type="submit">ยกเลิกลิงก์นี้</button>
