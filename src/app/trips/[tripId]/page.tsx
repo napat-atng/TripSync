@@ -3,7 +3,21 @@ import { notFound, redirect } from "next/navigation";
 import { CreateInvite } from "@/components/CreateInvite";
 import { revokeInvite } from "@/features/access/invite-actions";
 import { addTripParticipant, removeTripParticipant, respondToTripInvitation } from "@/features/trips/participant-actions";
+import { VotingSection } from "@/features/voting/VotingSection";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+const errorMessages: Record<string, string> = {
+  revoke: "ยกเลิกลิงก์ไม่สำเร็จ",
+  participant: "แก้ผู้ร่วมทริปไม่สำเร็จ",
+  response: "ตอบคำเชิญไม่สำเร็จ",
+  "date-option": "เพิ่มตัวเลือกวันไม่สำเร็จ",
+  "place-option": "เพิ่มตัวเลือกสถานที่ไม่สำเร็จ",
+  option: "ลบตัวเลือกไม่สำเร็จ",
+  open: "เปิดโหวตไม่สำเร็จ ตรวจว่ามีวันและสถานที่อย่างน้อยอย่างละหนึ่งตัวเลือก",
+  "voting-closed": "หมดเวลาโหวตแล้ว",
+  "date-vote": "บันทึกคำตอบวันไม่สำเร็จ",
+  "place-vote": "บันทึกคำตอบสถานที่ไม่สำเร็จ",
+};
 
 export default async function TripPage({
   params,
@@ -53,7 +67,7 @@ export default async function TripPage({
         {trip.description && <p>{trip.description}</p>}
         <p>สถานะ: {trip.status === "draft" ? "กำลังเตรียมตัวเลือก" : trip.status}</p>
         <p>ปิดโหวต: {new Date(trip.vote_deadline).toLocaleString("th-TH", { timeZone: trip.timezone })}</p>
-        {pageError && <p className="form-note" role="alert">{pageError === "revoke" ? "ยกเลิกลิงก์ไม่สำเร็จ" : "บันทึกข้อมูลผู้ร่วมทริปไม่สำเร็จ"} กรุณาลองอีกครั้ง</p>}
+        {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด"} กรุณาลองอีกครั้ง</p>}
         {!isOrganizer && myParticipation && trip.status !== "cancelled" && trip.status !== "completed" && (
           <section className="group-list">
             <h2>คำเชิญของคุณ</h2>
@@ -110,7 +124,13 @@ export default async function TripPage({
             </form>
           </section>
         )}
-        <section className="group-list"><h2>ตัวเลือกและโหวต</h2><p>กำลังเพิ่มตัวเลือกวัน สถานที่ และระบบโหวต</p></section>
+        <VotingSection
+          trip={trip}
+          userId={auth.claims.sub}
+          participants={participants ?? []}
+          groupUserIds={userIds}
+          names={names}
+        />
       </div>
     </main>
   );
