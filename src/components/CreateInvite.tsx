@@ -7,12 +7,18 @@ const initialState: InviteActionState = { path: null, error: null };
 
 export function CreateInvite({ groupId, tripId }: { groupId: string; tripId?: string }) {
   const [state, formAction, pending] = useActionState(createInvite, initialState);
-  const [copied, setCopied] = useState(false);
+  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const [copyErrorPath, setCopyErrorPath] = useState<string | null>(null);
 
   async function copyLink(): Promise<void> {
     if (!state.path) return;
-    await navigator.clipboard.writeText(`${window.location.origin}${state.path}`);
-    setCopied(true);
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${state.path}`);
+      setCopiedPath(state.path);
+      setCopyErrorPath(null);
+    } catch {
+      setCopyErrorPath(state.path);
+    }
   }
 
   return (
@@ -30,8 +36,9 @@ export function CreateInvite({ groupId, tripId }: { groupId: string; tripId?: st
         <div className="invite-result">
           <code>{state.path}</code>
           <button className="text-button" type="button" onClick={copyLink}>
-            {copied ? "คัดลอกแล้ว" : "คัดลอกลิงก์เต็ม"}
+            {copiedPath === state.path ? "คัดลอกแล้ว" : "คัดลอกลิงก์เต็ม"}
           </button>
+          {copyErrorPath === state.path && <span role="alert">คัดลอกไม่สำเร็จ กรุณาลองใหม่</span>}
         </div>
       )}
       {state.error && <p className="form-note" role="alert">{state.error}</p>}
