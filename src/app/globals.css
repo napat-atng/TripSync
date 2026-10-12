@@ -56,3 +56,8 @@ p { margin: 0; color: #4d655d; font-size: 18px; line-height: 1.8; }
 .support-note { padding: 12px; border-radius: 10px; background: #edf5f0; font-size: 15px; }
 .confirmed-plan, .rsvp-summary { display: grid; gap: 4px; margin-top: 20px; padding: 18px; border-radius: 12px; background: #edf5f0; }
 .confirmed-plan p, .rsvp-summary p { font-size: 16px; }
+.share-trip { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
+.share-trip span { font-size: 14px; color: #4d655d; }
+.notification-list { display: grid; gap: 12px; padding: 0; list-style: none; }
+.notification-list li { display: grid; gap: 5px; padding: 16px; border: 1px solid #dce8e1; border-radius: 12px; }
+.notification-list span { color: #4d655d; }

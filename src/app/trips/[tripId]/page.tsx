@@ -5,6 +5,7 @@ import { revokeInvite } from "@/features/access/invite-actions";
 import { addTripParticipant, removeTripParticipant, respondToTripInvitation } from "@/features/trips/participant-actions";
 import { VotingSection } from "@/features/voting/VotingSection";
 import { ConfirmationSection } from "@/features/trips/ConfirmationSection";
+import { ShareTrip } from "@/components/ShareTrip";
 import { cancelTrip, completeTrip } from "@/features/trips/plan-actions";
 import { editDraftTrip } from "@/features/trips/actions";
 import { bangkokInputValue } from "@/features/trips/time";
@@ -67,6 +68,18 @@ export default async function TripPage({
         .eq("trip_id", tripId)
         .order("created_at", { ascending: false })
     : { data: null };
+  const [{ data: shareDate }, { data: sharePlace }] = await Promise.all([
+    trip.selected_date_option_id
+      ? supabase.from("date_options").select("starts_on, ends_on").eq("id", trip.selected_date_option_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    trip.selected_place_option_id
+      ? supabase.from("place_options").select("name").eq("id", trip.selected_place_option_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const dateLabel = shareDate
+    ? shareDate.starts_on === shareDate.ends_on
+      ? shareDate.starts_on : `${shareDate.starts_on} – ${shareDate.ends_on}`
+    : undefined;
 
   return (
     <main className="page">
@@ -77,6 +90,11 @@ export default async function TripPage({
         <p>สถานะ: {trip.status === "draft" ? "กำลังเตรียมตัวเลือก" : trip.status}</p>
         <p>ปิดโหวต: {new Date(trip.vote_deadline).toLocaleString("th-TH", { timeZone: trip.timezone })}</p>
         {trip.status === "cancelled" && <p>เหตุผลที่ยกเลิก: {trip.cancelled_reason || "ไม่ได้ระบุ"}</p>}
+        {!["cancelled", "completed"].includes(trip.status) && <ShareTrip
+          tripId={trip.id} title={trip.title} status={trip.status}
+          deadline={trip.vote_deadline} dateLabel={dateLabel}
+          placeName={sharePlace?.name} meetingAt={trip.meeting_at} meetingPoint={trip.meeting_point}
+        />}
         {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด"} กรุณาลองอีกครั้ง</p>}
         {isOrganizer && trip.status === "draft" && <section className="group-list">
           <h2>แก้รายละเอียดทริป</h2>

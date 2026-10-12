@@ -22,6 +22,7 @@ export default async function GroupsPage({
       <div className="card dashboard-card">
         <div className="brand">TripSync</div>
         <h1>กลุ่มของฉัน</h1>
+        <Link href="/notifications" className="text-link">ดูแจ้งเตือน</Link>
         <p>สร้างกลุ่มเพื่อเริ่มวางแผนทริปกับเพื่อน</p>
         <form action={createGroup} className="group-form">
           <label htmlFor="group-name">ชื่อกลุ่ม</label>

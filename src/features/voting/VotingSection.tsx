@@ -4,7 +4,7 @@ import {
   submitDateVotes, submitPlaceVotes,
 } from "./actions";
 import { tallyVotes, type Participant } from "./tally";
-import { isBeforeDeadline } from "./time";
+import { isBeforeDeadline, isDeadlineNear } from "./time";
 
 type Trip = {
   id: string;
@@ -58,10 +58,15 @@ export async function VotingSection({
   const myPlaceVotes = new Set(placeVotes.filter((vote) => vote.user_id === userId)
     .map((vote) => vote.option_id));
   const mySubmission = submissions.find((item) => item.user_id === userId);
+  const deadlineSoon = canSubmit && isDeadlineNear(trip.vote_deadline);
+  const needsAnswer = !mySubmission?.date_submitted_at || !mySubmission?.place_submitted_at;
 
   return (
     <section className="group-list">
       <h2>ตัวเลือกและโหวต</h2>
+      {deadlineSoon && needsAnswer && <p className="form-note" role="status">
+        ใกล้ปิดโหวตแล้ว: {`${!mySubmission?.date_submitted_at ? "ตอบวัน" : ""}${!mySubmission?.date_submitted_at && !mySubmission?.place_submitted_at ? "และ" : ""}${!mySubmission?.place_submitted_at ? "ตอบสถานที่" : ""}`}ก่อนกำหนด
+      </p>}
       {trip.status === "voting" && !canSubmit && !isBeforeDeadline(trip.vote_deadline)
         && <p>หมดเวลาโหวตแล้ว รอผู้จัดสรุปแผน</p>}
       <h3>วันเดินทาง</h3>
