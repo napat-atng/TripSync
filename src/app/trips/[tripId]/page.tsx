@@ -6,6 +6,8 @@ import { addTripParticipant, removeTripParticipant, respondToTripInvitation } fr
 import { VotingSection } from "@/features/voting/VotingSection";
 import { ConfirmationSection } from "@/features/trips/ConfirmationSection";
 import { cancelTrip, completeTrip } from "@/features/trips/plan-actions";
+import { editDraftTrip } from "@/features/trips/actions";
+import { bangkokInputValue } from "@/features/trips/time";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const errorMessages: Record<string, string> = {
@@ -23,6 +25,7 @@ const errorMessages: Record<string, string> = {
   rsvp: "บันทึกการตอบรับไม่สำเร็จ",
   cancel: "ยกเลิกทริปไม่สำเร็จ",
   complete: "จบทริปไม่สำเร็จ ต้องรอให้วันเดินทางสิ้นสุดก่อน",
+  edit: "แก้รายละเอียดทริปไม่สำเร็จ ตรวจข้อมูลและเวลาปิดโหวต",
 };
 
 export default async function TripPage({
@@ -75,6 +78,19 @@ export default async function TripPage({
         <p>ปิดโหวต: {new Date(trip.vote_deadline).toLocaleString("th-TH", { timeZone: trip.timezone })}</p>
         {trip.status === "cancelled" && <p>เหตุผลที่ยกเลิก: {trip.cancelled_reason || "ไม่ได้ระบุ"}</p>}
         {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด"} กรุณาลองอีกครั้ง</p>}
+        {isOrganizer && trip.status === "draft" && <section className="group-list">
+          <h2>แก้รายละเอียดทริป</h2>
+          <form action={editDraftTrip} className="group-form">
+            <input type="hidden" name="tripId" value={tripId} />
+            <label htmlFor="edit-trip-title">ชื่อทริป</label>
+            <input id="edit-trip-title" name="title" required maxLength={160} defaultValue={trip.title} />
+            <label htmlFor="edit-trip-description">รายละเอียด</label>
+            <textarea id="edit-trip-description" name="description" maxLength={1000} rows={3} defaultValue={trip.description} />
+            <label htmlFor="edit-trip-deadline">เวลาปิดโหวต (เวลาไทย)</label>
+            <input id="edit-trip-deadline" name="deadlineLocal" type="datetime-local" required defaultValue={bangkokInputValue(trip.vote_deadline)} />
+            <button className="primary-button" type="submit">บันทึกการแก้ไข</button>
+          </form>
+        </section>}
         {!isOrganizer && myParticipation && trip.status !== "cancelled" && trip.status !== "completed" && (
           <section className="group-list">
             <h2>คำเชิญของคุณ</h2>
