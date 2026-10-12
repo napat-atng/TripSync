@@ -168,13 +168,17 @@ export async function VotingSection({
         </form>
         <form action={submitPlaceVotes} className="vote-form">
           <h3>สถานที่ที่สนใจ</h3>
-          <p>เลือกได้หลายแห่ง หรือไม่เลือกเลยหากไม่มีที่ที่ต้องการ</p>
+          <p>เลือกได้หลายแห่ง หรือกด “ไม่มีที่ที่ต้องการ” ด้านล่าง</p>
           <input type="hidden" name="tripId" value={trip.id} />
           {places.map((option) => <label key={option.id}>
             <input type="checkbox" name="placeId" value={option.id} defaultChecked={myPlaceVotes.has(option.id)} />
             {option.name}
           </label>)}
           <button className="primary-button" type="submit">{mySubmission?.place_submitted_at ? "แก้คำตอบสถานที่" : "ส่งคำตอบสถานที่"}</button>
+        </form>
+        <form action={submitPlaceVotes}>
+          <input type="hidden" name="tripId" value={trip.id} />
+          <button className="text-button" type="submit">ไม่มีที่ที่ต้องการ</button>
         </form>
       </>}
     </section>
