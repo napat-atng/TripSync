@@ -32,3 +32,13 @@ p { margin: 0; color: #4d655d; font-size: 18px; line-height: 1.8; }
 .form-note { margin-top: 12px; font-size: 14px; }
 .text-link, .text-button { display: inline-block; margin-top: 24px; color: #147c5a; font: inherit; font-weight: 700; }
 .text-button { padding: 0; border: 0; background: none; cursor: pointer; }
+.dashboard-card { width: min(100%, 760px); }
+.group-form { display: grid; gap: 10px; margin-top: 28px; }
+.group-form label { font-weight: 700; }
+.group-form input, .group-form textarea { width: 100%; padding: 12px; border: 1px solid #b8d0c3; border-radius: 10px; font: inherit; }
+.group-form .primary-button { justify-self: start; margin-top: 6px; }
+.group-list { margin-top: 36px; border-top: 1px solid #dce8e1; padding-top: 24px; }
+.group-list h2 { margin: 0 0 14px; font-size: 22px; }
+.group-list ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.group-list li { display: grid; gap: 4px; padding: 16px; border: 1px solid #dce8e1; border-radius: 12px; }
+.group-list li span { color: #4d655d; }

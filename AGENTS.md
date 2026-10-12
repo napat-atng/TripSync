@@ -8,7 +8,7 @@ When implementing the app, use the planned Next.js layout: `src/app/` for routes
 
 ## Build, Test, and Development Commands
 
-Run `npm install` to restore dependencies, `npm run dev` for the local server, `npm run build` for a production build, `npm run lint` for static checks, and `npm test` for automated tests (none are written yet). On Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`. Use `git status --short` to inspect local changes. Once Supabase migrations exist, use `supabase test db` to verify database policies.
+Run `npm install` to restore dependencies, `npm run dev` for the local server, `npm run build` for a production build, `npm run lint` for static checks, and `npm test` for automated tests. On Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`. Use `git status --short` to inspect local changes. Run `supabase test db` for database policies when local Docker is available; database tests are in `supabase/tests/`.
 
 ## Coding Style & Naming Conventions
 
@@ -16,7 +16,7 @@ Use TypeScript with two-space indentation and explicit types at public boundarie
 
 ## Testing Guidelines
 
-No test framework or coverage threshold is configured. Add focused `*.test.ts` tests for vote totals, deadlines, state transitions, and plan-version RSVP behavior. Test RLS allow/deny cases for members, organizers, and outsiders. Include an end-to-end path covering invite → vote → confirm → RSVP with two accounts.
+Node's built-in test runner executes `*.test.ts`; no coverage threshold is configured. Add focused tests for vote totals, deadlines, state transitions, and plan-version RSVP behavior. Test RLS allow/deny cases for members, organizers, and outsiders. Include an end-to-end path covering invite → vote → confirm → RSVP with two accounts.
 
 ## Commit & Pull Request Guidelines
 
