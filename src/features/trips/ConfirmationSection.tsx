@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { tallyVotes, type Participant } from "@/features/voting/tally";
 import { isBeforeDeadline } from "@/features/voting/time";
 import { submitRsvp } from "./plan-actions";
-import { bangkokInputValue } from "./time";
+import { zonedInputValue } from "./time";
 
 type Trip = {
   id: string;
@@ -83,7 +83,7 @@ export async function ConfirmationSection({
   const canRsvp = trip.status === "confirmed" && eligible.has(userId);
 
   return (
-    <section className="group-list">
+    <section id="confirmation-section" className="group-list">
       <h2>{trip.status === "voting" ? "สรุปผลและยืนยันแผน" : "แผนที่ยืนยัน"}</h2>
       {chosenDate && chosenPlace && <div className="confirmed-plan">
         <p><strong>วัน:</strong> {chosenDate.starts_on}{chosenDate.ends_on !== chosenDate.starts_on && ` – ${chosenDate.ends_on}`}</p>
@@ -100,8 +100,9 @@ export async function ConfirmationSection({
           places={placeChoices}
           selectedDateId={trip.selected_date_option_id}
           selectedPlaceId={trip.selected_place_option_id}
-          meetingLocal={bangkokInputValue(trip.meeting_at)}
+          meetingLocal={zonedInputValue(trip.meeting_at, trip.timezone)}
           meetingPoint={trip.meeting_point}
+          timezone={trip.timezone}
         />
       )}
       {trip.status === "voting" && !isOrganizer && <p>รอผู้จัดเลือกวันและสถานที่จากผลโหวต</p>}

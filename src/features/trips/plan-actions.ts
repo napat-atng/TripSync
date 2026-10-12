@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { parseZonedInput } from "./time";
 
 async function context(tripId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(tripId)) redirect("/groups");
@@ -10,7 +11,7 @@ async function context(tripId: string) {
   const { data: auth, error: authError } = await supabase.auth.getClaims();
   if (authError || !auth?.claims?.sub) redirect("/?next=%2Fgroups");
   const { data: trip } = await supabase.from("trips")
-    .select("id, group_id, organizer_id, status, vote_deadline")
+    .select("id, group_id, organizer_id, status, vote_deadline, timezone")
     .eq("id", tripId).maybeSingle();
   if (!trip) redirect("/groups");
   return { supabase, userId: auth.claims.sub, trip };
@@ -33,12 +34,11 @@ export async function savePlan(formData: FormData): Promise<void> {
       || (mode === "confirm" && (trip.status !== "voting" || new Date(trip.vote_deadline).getTime() > Date.now()))
       || (mode === "change" && trip.status !== "confirmed")
       || !/^[0-9a-f-]{36}$/i.test(dateId) || !/^[0-9a-f-]{36}$/i.test(placeId)
-      || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(meetingLocal)
       || !meetingPoint || meetingPoint.length > 500) {
     redirect(`/trips/${tripId}?error=plan`);
   }
-  const meetingAt = new Date(`${meetingLocal}:00+07:00`);
-  if (Number.isNaN(meetingAt.getTime()) || meetingAt.getTime() <= Date.now()) {
+  const meetingAt = parseZonedInput(meetingLocal, trip.timezone);
+  if (!meetingAt || meetingAt.getTime() <= Date.now()) {
     redirect(`/trips/${tripId}?error=plan`);
   }
   const { data: dateOption } = await supabase.from("date_options")

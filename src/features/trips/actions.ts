@@ -3,21 +3,22 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { isValidTimeZone, parseZonedInput } from "./time";
 
 export async function createTrip(formData: FormData): Promise<void> {
   const groupId = String(formData.get("groupId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const deadlineLocal = String(formData.get("deadlineLocal") ?? "");
+  const timezone = String(formData.get("timezone") ?? "Asia/Bangkok").trim();
   if (!/^[0-9a-f-]{36}$/i.test(groupId)) redirect("/groups");
   if (!title || title.length > 160
-      || description.length > 1000 || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(deadlineLocal)) {
+      || description.length > 1000 || !isValidTimeZone(timezone)) {
     redirect(`/groups/${groupId}?error=trip`);
   }
 
-  // The form labels this as Bangkok time, independent of the organizer's device timezone.
-  const deadline = new Date(`${deadlineLocal}:00+07:00`);
-  if (Number.isNaN(deadline.getTime()) || deadline.getTime() <= Date.now()) {
+  const deadline = parseZonedInput(deadlineLocal, timezone);
+  if (!deadline || deadline.getTime() <= Date.now()) {
     redirect(`/groups/${groupId}?error=deadline`);
   }
 
@@ -37,7 +38,7 @@ export async function createTrip(formData: FormData): Promise<void> {
     title,
     description,
     vote_deadline: deadline.toISOString(),
-    timezone: "Asia/Bangkok",
+    timezone,
   }).select("id").single();
   if (error || !trip) redirect(`/groups/${groupId}?error=trip`);
   redirect(`/trips/${trip.id}`);
@@ -49,12 +50,7 @@ export async function editDraftTrip(formData: FormData): Promise<void> {
   const description = String(formData.get("description") ?? "").trim();
   const deadlineLocal = String(formData.get("deadlineLocal") ?? "");
   if (!/^[0-9a-f-]{36}$/i.test(tripId)) redirect("/groups");
-  if (!title || title.length > 160 || description.length > 1000
-      || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(deadlineLocal)) {
-    redirect(`/trips/${tripId}?error=edit`);
-  }
-  const deadline = new Date(`${deadlineLocal}:00+07:00`);
-  if (Number.isNaN(deadline.getTime()) || deadline.getTime() <= Date.now()) {
+  if (!title || title.length > 160 || description.length > 1000) {
     redirect(`/trips/${tripId}?error=edit`);
   }
   const supabase = await createServerSupabaseClient();
@@ -63,8 +59,12 @@ export async function editDraftTrip(formData: FormData): Promise<void> {
     redirect(`/?next=${encodeURIComponent(`/trips/${tripId}`)}`);
   }
   const { data: trip } = await supabase.from("trips")
-    .select("organizer_id, status").eq("id", tripId).maybeSingle();
+    .select("organizer_id, status, timezone").eq("id", tripId).maybeSingle();
   if (!trip || trip.organizer_id !== auth.claims.sub || trip.status !== "draft") {
+    redirect(`/trips/${tripId}?error=edit`);
+  }
+  const deadline = parseZonedInput(deadlineLocal, trip.timezone);
+  if (!deadline || deadline.getTime() <= Date.now()) {
     redirect(`/trips/${tripId}?error=edit`);
   }
   const { data: updated, error } = await supabase.from("trips")

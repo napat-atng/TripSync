@@ -8,7 +8,7 @@ type PlaceChoice = { id: string; name: string; total: number; byDate: Record<str
 
 export function PlanForm({
   tripId, mode, dates, places, selectedDateId, selectedPlaceId,
-  meetingLocal, meetingPoint,
+  meetingLocal, meetingPoint, timezone,
 }: {
   tripId: string;
   mode: "confirm" | "change";
@@ -18,6 +18,7 @@ export function PlanForm({
   selectedPlaceId?: string | null;
   meetingLocal?: string;
   meetingPoint?: string | null;
+  timezone: string;
 }) {
   const [dateId, setDateId] = useState(selectedDateId ?? dates[0]?.id ?? "");
   const [placeId, setPlaceId] = useState(selectedPlaceId ?? places[0]?.id ?? "");
@@ -44,7 +45,7 @@ export function PlanForm({
       <p className="support-note">คนที่ว่างในวันที่เลือกและเลือกสถานที่นี้: {placeSupport} คน</p>
       {date && date.available <= 1 && <p className="form-note">วันดังกล่าวมีคนว่างเพียง {date.available} คน โปรดตรวจแผนก่อนยืนยัน</p>}
       {place && placeSupport <= 1 && <p className="form-note">สถานที่นี้มีคนที่ว่างในวันที่เลือกสนใจเพียง {placeSupport} คน</p>}
-      <label htmlFor="meeting-time">เวลานัดพบ (เวลาไทย)</label>
+      <label htmlFor="meeting-time">เวลานัดพบ ({timezone})</label>
       <input id="meeting-time" name="meetingLocal" type="datetime-local" required defaultValue={meetingLocal} />
       <label htmlFor="meeting-point">จุดนัดพบ</label>
       <input id="meeting-point" name="meetingPoint" required maxLength={500} defaultValue={meetingPoint ?? ""} />

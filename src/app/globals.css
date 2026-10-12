@@ -61,3 +61,5 @@ p { margin: 0; color: #4d655d; font-size: 18px; line-height: 1.8; }
 .notification-list { display: grid; gap: 12px; padding: 0; list-style: none; }
 .notification-list li { display: grid; gap: 5px; padding: 16px; border: 1px solid #dce8e1; border-radius: 12px; }
 .notification-list span { color: #4d655d; }
+.next-action { display: grid; gap: 8px; margin-top: 20px; padding: 18px; border-radius: 12px; background: #e2f5e9; }
+.next-action a { color: #147c5a; font-weight: 700; }

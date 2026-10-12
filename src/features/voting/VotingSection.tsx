@@ -62,7 +62,7 @@ export async function VotingSection({
   const needsAnswer = !mySubmission?.date_submitted_at || !mySubmission?.place_submitted_at;
 
   return (
-    <section className="group-list">
+    <section id="vote-section" className="group-list">
       <h2>ตัวเลือกและโหวต</h2>
       {deadlineSoon && needsAnswer && <p className="form-note" role="status">
         ใกล้ปิดโหวตแล้ว: {`${!mySubmission?.date_submitted_at ? "ตอบวัน" : ""}${!mySubmission?.date_submitted_at && !mySubmission?.place_submitted_at ? "และ" : ""}${!mySubmission?.place_submitted_at ? "ตอบสถานที่" : ""}`}ก่อนกำหนด

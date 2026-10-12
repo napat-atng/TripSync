@@ -108,12 +108,21 @@ export default async function GroupPage({
             <input id="trip-title" name="title" required maxLength={160} placeholder="เช่น เที่ยวทะเลเดือนหน้า" />
             <label htmlFor="trip-description">รายละเอียด (ไม่บังคับ)</label>
             <textarea id="trip-description" name="description" maxLength={1000} rows={3} />
-            <label htmlFor="trip-deadline">เวลาปิดโหวต (เวลาไทย)</label>
+            <label htmlFor="trip-timezone">เขตเวลาของทริป (IANA)</label>
+            <input id="trip-timezone" name="timezone" list="trip-timezones" required defaultValue="Asia/Bangkok" placeholder="เช่น Asia/Bangkok" />
+            <datalist id="trip-timezones">
+              <option value="Asia/Bangkok" />
+              <option value="Asia/Tokyo" />
+              <option value="Asia/Singapore" />
+              <option value="Europe/London" />
+              <option value="America/New_York" />
+            </datalist>
+            <label htmlFor="trip-deadline">เวลาปิดโหวต (ตามเขตเวลาของทริป)</label>
             <input id="trip-deadline" name="deadlineLocal" type="datetime-local" required />
             <button className="primary-button" type="submit">สร้างทริป</button>
           </form>
           {pageError === "trip" && <p className="form-note" role="alert">สร้างทริปไม่สำเร็จ กรุณาตรวจข้อมูลแล้วลองใหม่</p>}
-          {pageError === "deadline" && <p className="form-note" role="alert">เวลาปิดโหวตต้องอยู่ในอนาคต</p>}
+          {pageError === "deadline" && <p className="form-note" role="alert">เวลาปิดโหวตต้องอยู่ในอนาคตและตรงกับเขตเวลาที่เลือก</p>}
         </section>
         <section className="group-list">
           <h2>ทริปของกลุ่ม</h2>

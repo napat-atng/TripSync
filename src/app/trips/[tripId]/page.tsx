@@ -8,7 +8,8 @@ import { ConfirmationSection } from "@/features/trips/ConfirmationSection";
 import { ShareTrip } from "@/components/ShareTrip";
 import { cancelTrip, completeTrip } from "@/features/trips/plan-actions";
 import { editDraftTrip } from "@/features/trips/actions";
-import { bangkokInputValue } from "@/features/trips/time";
+import { zonedInputValue } from "@/features/trips/time";
+import { isBeforeDeadline } from "@/features/voting/time";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const errorMessages: Record<string, string> = {
@@ -49,9 +50,15 @@ export default async function TripPage({
     .eq("id", tripId)
     .maybeSingle();
   if (error || !trip) notFound();
-  const [{ data: participants }, { data: groupMembers }] = await Promise.all([
+  const [{ data: participants }, { data: groupMembers }, { data: mySubmission }, { data: myRsvp }] = await Promise.all([
     supabase.from("trip_participants").select("user_id, invitation_status").eq("trip_id", tripId),
     supabase.from("group_members").select("user_id").eq("group_id", trip.group_id),
+    supabase.from("vote_submissions").select("date_submitted_at, place_submitted_at")
+      .eq("trip_id", tripId).eq("user_id", auth.claims.sub).maybeSingle(),
+    trip.plan_version > 0
+      ? supabase.from("trip_rsvps").select("response").eq("trip_id", tripId)
+          .eq("user_id", auth.claims.sub).eq("plan_version", trip.plan_version).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
   const userIds = groupMembers?.map((member) => member.user_id) ?? [];
   const { data: profiles } = userIds.length
@@ -62,6 +69,35 @@ export default async function TripPage({
   const availableMembers = groupMembers?.filter((member) => !participantIds.has(member.user_id)) ?? [];
   const myParticipation = participants?.find((person) => person.user_id === auth.claims.sub);
   const isOrganizer = trip.organizer_id === auth.claims.sub;
+  const isActiveParticipant = !!myParticipation && myParticipation.invitation_status !== "declined";
+  let nextAction: { text: string; href?: string };
+  if (trip.status === "draft") {
+    nextAction = isOrganizer
+      ? { text: "เพิ่มตัวเลือกวันและสถานที่ แล้วเปิดโหวต", href: "#vote-section" }
+      : !myParticipation
+        ? { text: "คุณยังไม่ได้รับคำเชิญเข้าร่วมทริปนี้" }
+      : myParticipation?.invitation_status === "pending"
+        ? { text: "ตอบคำเชิญเข้าร่วมทริป", href: "#invitation-section" }
+        : myParticipation?.invitation_status === "declined"
+          ? { text: "คุณปฏิเสธคำเชิญแล้ว หากเปลี่ยนใจสามารถตอบรับใหม่", href: "#invitation-section" }
+        : { text: "ดูหรือเสนอตัวเลือกวันและสถานที่", href: "#vote-section" };
+  } else if (trip.status === "voting" && isBeforeDeadline(trip.vote_deadline)) {
+    nextAction = !isActiveParticipant
+      ? { text: myParticipation ? "คุณปฏิเสธคำเชิญแล้ว หากเปลี่ยนใจสามารถตอบรับใหม่" : "คุณยังไม่ได้รับคำเชิญเข้าร่วมทริปนี้", href: myParticipation ? "#invitation-section" : undefined }
+      : (!mySubmission?.date_submitted_at || !mySubmission?.place_submitted_at)
+      ? { text: "โหวตวันและสถานที่ให้ครบก่อนกำหนด", href: "#vote-section" }
+      : { text: "ส่งคำตอบครบแล้ว รอผลโหวต" };
+  } else if (trip.status === "voting") {
+    nextAction = isOrganizer
+      ? { text: "ตรวจผลโหวตและยืนยันแผน", href: "#confirmation-section" }
+      : { text: "หมดเวลาโหวตแล้ว รอผู้จัดสรุปแผน" };
+  } else if (trip.status === "confirmed") {
+    nextAction = isActiveParticipant && !myRsvp
+      ? { text: "ตอบรับแผนล่าสุด", href: "#confirmation-section" }
+      : { text: "ดูแผนที่ยืนยันและรายชื่อผู้ไป", href: "#confirmation-section" };
+  } else {
+    nextAction = { text: trip.status === "cancelled" ? "ทริปนี้ถูกยกเลิกแล้ว" : "ทริปนี้จบแล้ว" };
+  }
   const { data: inviteLinks } = isOrganizer
     ? await supabase.from("invite_links")
         .select("id, expires_at, revoked_at")
@@ -88,14 +124,19 @@ export default async function TripPage({
         <h1>{trip.title}</h1>
         {trip.description && <p>{trip.description}</p>}
         <p>สถานะ: {trip.status === "draft" ? "กำลังเตรียมตัวเลือก" : trip.status}</p>
+        <p>เขตเวลา: {trip.timezone}</p>
         <p>ปิดโหวต: {new Date(trip.vote_deadline).toLocaleString("th-TH", { timeZone: trip.timezone })}</p>
         {trip.status === "cancelled" && <p>เหตุผลที่ยกเลิก: {trip.cancelled_reason || "ไม่ได้ระบุ"}</p>}
         {!["cancelled", "completed"].includes(trip.status) && <ShareTrip
           tripId={trip.id} title={trip.title} status={trip.status}
-          deadline={trip.vote_deadline} dateLabel={dateLabel}
+          deadline={trip.vote_deadline} timezone={trip.timezone} dateLabel={dateLabel}
           placeName={sharePlace?.name} meetingAt={trip.meeting_at} meetingPoint={trip.meeting_point}
         />}
         {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด"} กรุณาลองอีกครั้ง</p>}
+        <div className="next-action" aria-label="สิ่งที่ต้องทำตอนนี้">
+          <strong>สิ่งที่ต้องทำตอนนี้</strong>
+          {nextAction.href ? <a href={nextAction.href}>{nextAction.text} ↓</a> : <span>{nextAction.text}</span>}
+        </div>
         {isOrganizer && trip.status === "draft" && <section className="group-list">
           <h2>แก้รายละเอียดทริป</h2>
           <form action={editDraftTrip} className="group-form">
@@ -104,13 +145,13 @@ export default async function TripPage({
             <input id="edit-trip-title" name="title" required maxLength={160} defaultValue={trip.title} />
             <label htmlFor="edit-trip-description">รายละเอียด</label>
             <textarea id="edit-trip-description" name="description" maxLength={1000} rows={3} defaultValue={trip.description} />
-            <label htmlFor="edit-trip-deadline">เวลาปิดโหวต (เวลาไทย)</label>
-            <input id="edit-trip-deadline" name="deadlineLocal" type="datetime-local" required defaultValue={bangkokInputValue(trip.vote_deadline)} />
+            <label htmlFor="edit-trip-deadline">เวลาปิดโหวต ({trip.timezone})</label>
+            <input id="edit-trip-deadline" name="deadlineLocal" type="datetime-local" required defaultValue={zonedInputValue(trip.vote_deadline, trip.timezone)} />
             <button className="primary-button" type="submit">บันทึกการแก้ไข</button>
           </form>
         </section>}
         {!isOrganizer && myParticipation && trip.status !== "cancelled" && trip.status !== "completed" && (
-          <section className="group-list">
+          <section id="invitation-section" className="group-list">
             <h2>คำเชิญของคุณ</h2>
             <p>สถานะ: {myParticipation.invitation_status}</p>
             <form action={respondToTripInvitation} className="inline-actions">

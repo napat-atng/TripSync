@@ -7,6 +7,7 @@ type ShareTripProps = {
   title: string;
   status: string;
   deadline: string;
+  timezone: string;
   dateLabel?: string;
   placeName?: string;
   meetingAt?: string | null;
@@ -14,7 +15,7 @@ type ShareTripProps = {
 };
 
 export function ShareTrip({
-  tripId, title, status, deadline, dateLabel, placeName, meetingAt, meetingPoint,
+  tripId, title, status, deadline, timezone, dateLabel, placeName, meetingAt, meetingPoint,
 }: ShareTripProps) {
   const [result, setResult] = useState("");
 
@@ -23,11 +24,11 @@ export function ShareTrip({
     let instruction = "ช่วยเสนอวันและสถานที่สำหรับทริปนี้";
     if (status === "voting") {
       instruction = new Date(deadline).getTime() > Date.now()
-        ? `ช่วยโหวตวันและสถานที่ก่อน ${new Date(deadline).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}`
+        ? `ช่วยโหวตวันและสถานที่ก่อน ${new Date(deadline).toLocaleString("th-TH", { timeZone: timezone })} (${timezone})`
         : "หมดเวลาโหวตแล้ว รอผู้จัดสรุปแผน";
     } else if (status === "confirmed") {
       const meeting = meetingAt
-        ? ` นัดพบ ${new Date(meetingAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}` : "";
+        ? ` นัดพบ ${new Date(meetingAt).toLocaleString("th-TH", { timeZone: timezone })} (${timezone})` : "";
       instruction = `ยืนยันแผนแล้ว: ${dateLabel ?? "วันเดินทาง"} ที่ ${placeName ?? "สถานที่ที่เลือก"}${meeting}`;
       if (meetingPoint) instruction += ` จุดนัดพบ ${meetingPoint}`;
       instruction += " กรุณาตอบรับแผนล่าสุด";
