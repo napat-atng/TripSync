@@ -4,6 +4,8 @@ import { CreateInvite } from "@/components/CreateInvite";
 import { revokeInvite } from "@/features/access/invite-actions";
 import { addTripParticipant, removeTripParticipant, respondToTripInvitation } from "@/features/trips/participant-actions";
 import { VotingSection } from "@/features/voting/VotingSection";
+import { ConfirmationSection } from "@/features/trips/ConfirmationSection";
+import { cancelTrip, completeTrip } from "@/features/trips/plan-actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const errorMessages: Record<string, string> = {
@@ -17,6 +19,10 @@ const errorMessages: Record<string, string> = {
   "voting-closed": "หมดเวลาโหวตแล้ว",
   "date-vote": "บันทึกคำตอบวันไม่สำเร็จ",
   "place-vote": "บันทึกคำตอบสถานที่ไม่สำเร็จ",
+  plan: "ยืนยันหรือเปลี่ยนแผนไม่สำเร็จ กรุณาตรวจวัน สถานที่ และเวลานัดพบ",
+  rsvp: "บันทึกการตอบรับไม่สำเร็จ",
+  cancel: "ยกเลิกทริปไม่สำเร็จ",
+  complete: "จบทริปไม่สำเร็จ ต้องรอให้วันเดินทางสิ้นสุดก่อน",
 };
 
 export default async function TripPage({
@@ -35,7 +41,7 @@ export default async function TripPage({
   }
 
   const { data: trip, error } = await supabase.from("trips")
-    .select("id, group_id, title, description, status, vote_deadline, timezone, organizer_id")
+    .select("id, group_id, title, description, status, vote_deadline, timezone, organizer_id, selected_date_option_id, selected_place_option_id, meeting_at, meeting_point, plan_version, cancelled_reason")
     .eq("id", tripId)
     .maybeSingle();
   if (error || !trip) notFound();
@@ -67,6 +73,7 @@ export default async function TripPage({
         {trip.description && <p>{trip.description}</p>}
         <p>สถานะ: {trip.status === "draft" ? "กำลังเตรียมตัวเลือก" : trip.status}</p>
         <p>ปิดโหวต: {new Date(trip.vote_deadline).toLocaleString("th-TH", { timeZone: trip.timezone })}</p>
+        {trip.status === "cancelled" && <p>เหตุผลที่ยกเลิก: {trip.cancelled_reason || "ไม่ได้ระบุ"}</p>}
         {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด"} กรุณาลองอีกครั้ง</p>}
         {!isOrganizer && myParticipation && trip.status !== "cancelled" && trip.status !== "completed" && (
           <section className="group-list">
@@ -131,6 +138,28 @@ export default async function TripPage({
           groupUserIds={userIds}
           names={names}
         />
+        <ConfirmationSection
+          trip={trip}
+          userId={auth.claims.sub}
+          participants={participants ?? []}
+          groupUserIds={userIds}
+          names={names}
+        />
+        {isOrganizer && ["draft", "voting", "confirmed"].includes(trip.status) && (
+          <section className="group-list">
+            <h2>จัดการทริป</h2>
+            {trip.status === "confirmed" && <form action={completeTrip}>
+              <input type="hidden" name="tripId" value={tripId} />
+              <button className="text-button" type="submit">ทำเครื่องหมายว่าจบทริปแล้ว</button>
+            </form>}
+            <form action={cancelTrip} className="group-form">
+              <input type="hidden" name="tripId" value={tripId} />
+              <label htmlFor="cancel-reason">เหตุผลที่ยกเลิก (ไม่บังคับ)</label>
+              <input id="cancel-reason" name="reason" maxLength={500} />
+              <button className="text-button" type="submit">ยกเลิกทริป</button>
+            </form>
+          </section>
+        )}
       </div>
     </main>
   );

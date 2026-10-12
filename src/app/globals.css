@@ -53,3 +53,6 @@ p { margin: 0; color: #4d655d; font-size: 18px; line-height: 1.8; }
 .vote-form fieldset { display: flex; flex-wrap: wrap; gap: 14px; padding: 14px; border: 1px solid #b8d0c3; border-radius: 10px; }
 .vote-form label { display: inline-flex; align-items: center; gap: 6px; }
 .vote-form .primary-button { justify-self: start; margin-top: 0; }
+.support-note { padding: 12px; border-radius: 10px; background: #edf5f0; font-size: 15px; }
+.confirmed-plan, .rsvp-summary { display: grid; gap: 4px; margin-top: 20px; padding: 18px; border-radius: 12px; background: #edf5f0; }
+.confirmed-plan p, .rsvp-summary p { font-size: 16px; }
