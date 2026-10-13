@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { acceptInvite } from "@/features/access/invite-actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { SiteHeader } from "@/components/SiteHeader";
+import Link from "next/link";
 
 const statusText: Record<string, string> = {
   not_found: "ไม่พบลิงก์เชิญนี้",
@@ -29,23 +31,24 @@ export default async function InvitePage({
   const status = error ? "not_found" : (preview?.invite_status ?? "not_found");
 
   return (
-    <main className="page">
-      <div className="card">
-        <div className="brand">TripSync</div>
+    <><SiteHeader /><main className="page">
+      <div className="auth-card">
         <h1>{status === "valid" ? "คำเชิญเข้าร่วม" : "ลิงก์เชิญใช้ไม่ได้"}</h1>
         {status === "valid" ? (
           <>
-            <p>กลุ่ม: <strong>{preview.group_name}</strong></p>
-            {preview.trip_title && <p>ทริป: <strong>{preview.trip_title}</strong></p>}
-            <p>การเปิดลิงก์ยังไม่เพิ่มคุณเป็นสมาชิก กดยืนยันเมื่อพร้อมเข้าร่วม</p>
+            <div className="confirmed-plan">
+              <p>กลุ่ม: <strong>{preview.group_name}</strong></p>
+              {preview.trip_title && <p>ทริป: <strong>{preview.trip_title}</strong></p>}
+            </div>
+            <p>ตรวจชื่อกลุ่มและทริปก่อนเข้าร่วม เมื่อยืนยันแล้วคุณจะเห็นแผนและร่วมโหวตได้</p>
             <form action={acceptInvite}>
               <input type="hidden" name="token" value={token} />
               <button className="primary-button" type="submit">ยืนยันเข้าร่วม</button>
             </form>
             {acceptError && <p className="form-note" role="alert">เข้าร่วมไม่สำเร็จ กรุณาลองอีกครั้ง</p>}
           </>
-        ) : <p>{statusText[status] ?? statusText.not_found}</p>}
+        ) : <><p>{statusText[status] ?? statusText.not_found}</p><Link href="/groups" className="secondary-button">กลับไปกลุ่มของฉัน</Link></>}
       </div>
-    </main>
+    </main></>
   );
 }

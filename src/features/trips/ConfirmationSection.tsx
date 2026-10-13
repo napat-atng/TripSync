@@ -112,12 +112,12 @@ export async function ConfirmationSection({
         <p>ผู้ที่ไป: {currentRsvps.filter((item) => item.response === "going")
           .map((item) => names.get(item.user_id) ?? item.user_id.slice(0, 8)).join(", ") || "ยังไม่มี"}</p>
         {canRsvp && <>
-          <p>{myRsvp ? `คำตอบของคุณ: ${myRsvp.response}` : hadPastRsvp ? "แผนเปลี่ยนแล้ว ต้องตอบรับใหม่" : "ยังไม่ตอบรับแผนนี้"}</p>
+          <p>{myRsvp ? `คำตอบของคุณ: ${({ going: "ไป", maybe: "อาจไป", not_going: "ไม่ไป" } as Record<string, string>)[myRsvp.response] ?? myRsvp.response}` : hadPastRsvp ? "แผนเปลี่ยนแล้ว ต้องตอบรับใหม่" : "ยังไม่ตอบรับแผนนี้"}</p>
           <form action={submitRsvp} className="inline-actions">
             <input type="hidden" name="tripId" value={trip.id} />
-            <button className="primary-button" type="submit" name="response" value="going">ไป</button>
-            <button className="text-button" type="submit" name="response" value="maybe">อาจไป</button>
-            <button className="text-button" type="submit" name="response" value="not_going">ไม่ไป</button>
+            <button className={myRsvp?.response === "going" ? "primary-button" : "secondary-button"} type="submit" name="response" value="going" aria-pressed={myRsvp?.response === "going"}>ไป</button>
+            <button className={myRsvp?.response === "maybe" ? "primary-button" : "secondary-button"} type="submit" name="response" value="maybe" aria-pressed={myRsvp?.response === "maybe"}>อาจไป</button>
+            <button className={myRsvp?.response === "not_going" ? "primary-button" : "secondary-button"} type="submit" name="response" value="not_going" aria-pressed={myRsvp?.response === "not_going"}>ไม่ไป</button>
           </form>
         </>}
       </div>}

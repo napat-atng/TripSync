@@ -5,6 +5,7 @@ import { revokeInvite } from "@/features/access/invite-actions";
 import { createTrip } from "@/features/trips/actions";
 import { manageGroupMember, transferOrganizer, updateGroup } from "@/features/groups/actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { SiteHeader } from "@/components/SiteHeader";
 
 export default async function GroupPage({
   params,
@@ -46,17 +47,20 @@ export default async function GroupPage({
     : { data: null };
 
   return (
-    <main className="page">
+    <><SiteHeader /><main className="page">
       <div className="card dashboard-card">
-        <Link href="/groups" className="text-link">← กลุ่มของฉัน</Link>
-        <h1>{group.name}</h1>
-        {group.description && <p>{group.description}</p>}
-        <p>สมาชิก {members?.length ?? 0} คน</p>
+        <Link href="/groups" className="breadcrumb">← กลุ่มของฉัน</Link>
+        <header className="page-heading">
+          <h1>{group.name}</h1>
+          {group.description && <p>{group.description}</p>}
+          <div className="page-meta"><span className="meta-pill">สมาชิก {members?.length ?? 0} คน</span><span className="meta-pill">ทริป {trips?.length ?? 0} ทริป</span></div>
+        </header>
         {pageError === "revoke" && <p className="form-note" role="alert">ยกเลิกลิงก์ไม่สำเร็จ กรุณาลองอีกครั้ง</p>}
         {pageError === "group" && <p className="form-note" role="alert">แก้ข้อมูลกลุ่มไม่สำเร็จ</p>}
         {pageError === "member" && <p className="form-note" role="alert">จัดการสมาชิกไม่สำเร็จ อาจเป็น admin คนสุดท้าย หรือยังเป็นผู้จัดทริปที่ไม่จบ</p>}
         {pageError === "transfer" && <p className="form-note" role="alert">โอนผู้จัดทริปไม่สำเร็จ</p>}
-        {membership?.role === "admin" && <section className="group-list">
+        <div className="group-dashboard">
+        {membership?.role === "admin" && <section className="group-list group-settings">
           <h2>แก้ข้อมูลกลุ่ม</h2>
           <form action={updateGroup} className="group-form">
             <input type="hidden" name="groupId" value={groupId} />
@@ -67,7 +71,7 @@ export default async function GroupPage({
             <button className="primary-button" type="submit">บันทึกข้อมูลกลุ่ม</button>
           </form>
         </section>}
-        <section className="group-list">
+        <section className="group-list group-members">
           <h2>สมาชิกกลุ่ม</h2>
           <ul>{members?.map((member) => <li key={member.user_id}>
             <strong>{names.get(member.user_id) ?? member.user_id.slice(0, 8)}</strong>
@@ -84,7 +88,7 @@ export default async function GroupPage({
         </section>
         {membership?.role === "admin" && <CreateInvite groupId={group.id} />}
         {membership?.role === "admin" && !!inviteLinks?.length && (
-          <section className="group-list">
+          <section className="group-list group-invites">
             <h2>ลิงก์เชิญที่สร้างไว้</h2>
             <ul>{inviteLinks.map((link) => {
               const active = !link.revoked_at;
@@ -100,8 +104,9 @@ export default async function GroupPage({
             })}</ul>
           </section>
         )}
-        <section className="group-list">
+        <section className="group-list group-create-trip">
           <h2>สร้างทริป</h2>
+          <p className="section-intro">เริ่มจากชื่อทริปและกำหนดเวลาปิดโหวต แล้วค่อยเพิ่มวันกับสถานที่ในหน้าทริป</p>
           <form action={createTrip} className="group-form">
             <input type="hidden" name="groupId" value={groupId} />
             <label htmlFor="trip-title">ชื่อทริป</label>
@@ -110,6 +115,7 @@ export default async function GroupPage({
             <textarea id="trip-description" name="description" maxLength={1000} rows={3} />
             <label htmlFor="trip-timezone">เขตเวลาของทริป (IANA)</label>
             <input id="trip-timezone" name="timezone" list="trip-timezones" required defaultValue="Asia/Bangkok" placeholder="เช่น Asia/Bangkok" />
+            <p className="field-hint">ใช้เขตเวลาของสถานที่เที่ยว เช่น Asia/Bangkok</p>
             <datalist id="trip-timezones">
               <option value="Asia/Bangkok" />
               <option value="Asia/Tokyo" />
@@ -124,12 +130,12 @@ export default async function GroupPage({
           {pageError === "trip" && <p className="form-note" role="alert">สร้างทริปไม่สำเร็จ กรุณาตรวจข้อมูลแล้วลองใหม่</p>}
           {pageError === "deadline" && <p className="form-note" role="alert">เวลาปิดโหวตต้องอยู่ในอนาคตและตรงกับเขตเวลาที่เลือก</p>}
         </section>
-        <section className="group-list">
+        <section className="group-list group-trips">
           <h2>ทริปของกลุ่ม</h2>
           {trips?.length ? (
             <ul>{trips.map((trip) => <li key={trip.id}>
               <Link href={`/trips/${trip.id}`}><strong>{trip.title}</strong></Link>
-              <span>{trip.status} · ผู้จัด {names.get(trip.organizer_id) ?? trip.organizer_id.slice(0, 8)}</span>
+              <span>{({ draft: "กำลังเตรียม", voting: "กำลังโหวต", confirmed: "ยืนยันแผนแล้ว", completed: "จบทริปแล้ว", cancelled: "ยกเลิกแล้ว" } as Record<string, string>)[trip.status] ?? trip.status} · ผู้จัด {names.get(trip.organizer_id) ?? trip.organizer_id.slice(0, 8)}</span>
               {membership?.role === "admin" && ["draft", "voting", "confirmed"].includes(trip.status) && (members?.length ?? 0) > 1 && (
                 <form action={transferOrganizer} className="inline-actions">
                   <input type="hidden" name="groupId" value={groupId} />
@@ -143,9 +149,10 @@ export default async function GroupPage({
                 </form>
               )}
             </li>)}</ul>
-          ) : <p>ยังไม่มีทริปในกลุ่มนี้</p>}
+          ) : <div className="empty-state"><p>ยังไม่มีทริปในกลุ่มนี้ สร้างทริปแรกจากแบบฟอร์มด้านข้าง</p></div>}
         </section>
+        </div>
       </div>
-    </main>
+    </main></>
   );
 }

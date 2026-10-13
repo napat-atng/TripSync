@@ -64,6 +64,7 @@ export async function VotingSection({
   return (
     <section id="vote-section" className="group-list">
       <h2>ตัวเลือกและโหวต</h2>
+      <p className="section-intro">{trip.status === "draft" ? "ช่วยกันเสนอวันและสถานที่ ก่อนผู้จัดเปิดโหวต" : "ดูผลของกลุ่มและเลือกคำตอบของคุณก่อนหมดเวลา"}</p>
       {deadlineSoon && needsAnswer && <p className="form-note" role="status">
         ใกล้ปิดโหวตแล้ว: {`${!mySubmission?.date_submitted_at ? "ตอบวัน" : ""}${!mySubmission?.date_submitted_at && !mySubmission?.place_submitted_at ? "และ" : ""}${!mySubmission?.place_submitted_at ? "ตอบสถานที่" : ""}`}ก่อนกำหนด
       </p>}
@@ -92,7 +93,7 @@ export async function VotingSection({
             </form>
           </details>}
         </li>;
-      })}</ul> : <p>ยังไม่มีตัวเลือกวัน</p>}
+      })}</ul> : <div className="empty-state"><p>ยังไม่มีตัวเลือกวัน เพิ่มวันที่อยากไปด้านล่าง</p></div>}
       {canPropose && <form action={addDateOption} className="group-form">
         <input type="hidden" name="tripId" value={trip.id} />
         <label htmlFor="date-start">วันเริ่ม</label>
@@ -128,7 +129,7 @@ export async function VotingSection({
             </form>
           </details>}
         </li>;
-      })}</ul> : <p>ยังไม่มีตัวเลือกสถานที่</p>}
+      })}</ul> : <div className="empty-state"><p>ยังไม่มีตัวเลือกสถานที่ เสนอที่ที่อยากไปด้านล่าง</p></div>}
       {canPropose && <form action={addPlaceOption} className="group-form">
         <input type="hidden" name="tripId" value={trip.id} />
         <label htmlFor="place-name">ชื่อสถานที่</label>

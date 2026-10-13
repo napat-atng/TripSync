@@ -11,6 +11,7 @@ import { editDraftTrip } from "@/features/trips/actions";
 import { zonedInputValue } from "@/features/trips/time";
 import { isBeforeDeadline } from "@/features/voting/time";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const errorMessages: Record<string, string> = {
   revoke: "ยกเลิกลิงก์ไม่สำเร็จ",
@@ -28,6 +29,18 @@ const errorMessages: Record<string, string> = {
   cancel: "ยกเลิกทริปไม่สำเร็จ",
   complete: "จบทริปไม่สำเร็จ ต้องรอให้วันเดินทางสิ้นสุดก่อน",
   edit: "แก้รายละเอียดทริปไม่สำเร็จ ตรวจข้อมูลและเวลาปิดโหวต",
+};
+const statusLabels: Record<string, string> = {
+  draft: "กำลังเตรียมตัวเลือก",
+  voting: "กำลังโหวต",
+  confirmed: "ยืนยันแผนแล้ว",
+  completed: "จบทริปแล้ว",
+  cancelled: "ยกเลิกแล้ว",
+};
+const invitationLabels: Record<string, string> = {
+  pending: "รอตอบคำเชิญ",
+  interested: "สนใจไป",
+  declined: "ไม่ร่วมทริป",
 };
 
 export default async function TripPage({
@@ -118,26 +131,31 @@ export default async function TripPage({
     : undefined;
 
   return (
-    <main className="page">
+    <><SiteHeader /><main className="page">
       <div className="card dashboard-card">
-        <Link href={`/groups/${trip.group_id}`} className="text-link">← กลับกลุ่ม</Link>
-        <h1>{trip.title}</h1>
-        {trip.description && <p>{trip.description}</p>}
-        <p>สถานะ: {trip.status === "draft" ? "กำลังเตรียมตัวเลือก" : trip.status}</p>
-        <p>เขตเวลา: {trip.timezone}</p>
-        <p>ปิดโหวต: {new Date(trip.vote_deadline).toLocaleString("th-TH", { timeZone: trip.timezone })}</p>
-        {trip.status === "cancelled" && <p>เหตุผลที่ยกเลิก: {trip.cancelled_reason || "ไม่ได้ระบุ"}</p>}
-        {!["cancelled", "completed"].includes(trip.status) && <ShareTrip
-          tripId={trip.id} title={trip.title} status={trip.status}
-          deadline={trip.vote_deadline} timezone={trip.timezone} dateLabel={dateLabel}
-          placeName={sharePlace?.name} meetingAt={trip.meeting_at} meetingPoint={trip.meeting_point}
-        />}
+        <Link href={`/groups/${trip.group_id}`} className="breadcrumb">← กลับกลุ่ม</Link>
+        <header className="page-heading">
+          <h1>{trip.title}</h1>
+          {trip.description && <p>{trip.description}</p>}
+          <div className="page-meta">
+            <span className="status" data-status={trip.status}>{statusLabels[trip.status] ?? trip.status}</span>
+            <span className="meta-pill">ปิดโหวต {new Date(trip.vote_deadline).toLocaleString("th-TH", { timeZone: trip.timezone })}</span>
+            <span className="meta-pill">เวลา {trip.timezone}</span>
+          </div>
+          {trip.status === "cancelled" && <p className="form-note">เหตุผลที่ยกเลิก: {trip.cancelled_reason || "ไม่ได้ระบุ"}</p>}
+        </header>
         {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"}</p>}
         <div className="next-action" aria-label="สิ่งที่ต้องทำตอนนี้">
           <strong>สิ่งที่ต้องทำตอนนี้</strong>
           {nextAction.href ? <a href={nextAction.href}>{nextAction.text} ↓</a> : <span>{nextAction.text}</span>}
         </div>
-        {isOrganizer && trip.status === "draft" && <section className="group-list">
+        {!["cancelled", "completed"].includes(trip.status) && <ShareTrip
+          tripId={trip.id} title={trip.title} status={trip.status}
+          deadline={trip.vote_deadline} timezone={trip.timezone} dateLabel={dateLabel}
+          placeName={sharePlace?.name} meetingAt={trip.meeting_at} meetingPoint={trip.meeting_point}
+        />}
+        <div className="trip-dashboard">
+        {isOrganizer && trip.status === "draft" && <section className="group-list trip-settings">
           <h2>แก้รายละเอียดทริป</h2>
           <form action={editDraftTrip} className="group-form">
             <input type="hidden" name="tripId" value={tripId} />
@@ -151,9 +169,9 @@ export default async function TripPage({
           </form>
         </section>}
         {!isOrganizer && myParticipation && trip.status !== "cancelled" && trip.status !== "completed" && (
-          <section id="invitation-section" className="group-list">
+          <section id="invitation-section" className="group-list trip-invitation">
             <h2>คำเชิญของคุณ</h2>
-            <p>สถานะ: {myParticipation.invitation_status}</p>
+            <p>สถานะ: {invitationLabels[myParticipation.invitation_status] ?? myParticipation.invitation_status}</p>
             <form action={respondToTripInvitation} className="inline-actions">
               <input type="hidden" name="tripId" value={tripId} />
               <button className="primary-button" type="submit" name="status" value="interested">สนใจไป</button>
@@ -164,7 +182,7 @@ export default async function TripPage({
         {isOrganizer && trip.status !== "cancelled" && trip.status !== "completed" && (
           <CreateInvite groupId={trip.group_id} tripId={trip.id} />
         )}
-        {isOrganizer && !!inviteLinks?.length && <section className="group-list">
+        {isOrganizer && !!inviteLinks?.length && <section className="group-list trip-invites">
           <h2>ลิงก์เชิญทริป</h2>
           <ul>{inviteLinks.map((link) => <li key={link.id}>
             <strong>{link.revoked_at ? "ยกเลิกแล้ว" : "ยังไม่เพิกถอน"}</strong>
@@ -177,11 +195,11 @@ export default async function TripPage({
             </form>}
           </li>)}</ul>
         </section>}
-        <section className="group-list">
+        <section className="group-list trip-people">
           <h2>ผู้ร่วมทริป</h2>
           {participants?.length ? <ul>{participants.map((person) => <li key={person.user_id}>
             <strong>{names.get(person.user_id) ?? person.user_id.slice(0, 8)}</strong>
-            <span>{person.invitation_status}</span>
+            <span>{invitationLabels[person.invitation_status] ?? person.invitation_status}</span>
             {isOrganizer && trip.status === "draft" && person.user_id !== auth.claims.sub && (
               <form action={removeTripParticipant}>
                 <input type="hidden" name="tripId" value={tripId} />
@@ -192,7 +210,7 @@ export default async function TripPage({
           </li>)}</ul> : <p>ยังไม่มีผู้ร่วมทริป</p>}
         </section>
         {isOrganizer && trip.status === "draft" && !!availableMembers.length && (
-          <section className="group-list">
+          <section className="group-list trip-add-person">
             <h2>ชวนสมาชิกกลุ่มเข้าทริป</h2>
             <form action={addTripParticipant} className="group-form">
               <input type="hidden" name="tripId" value={tripId} />
@@ -221,7 +239,7 @@ export default async function TripPage({
           names={names}
         />
         {isOrganizer && ["draft", "voting", "confirmed"].includes(trip.status) && (
-          <section className="group-list">
+          <section className="group-list trip-management">
             <h2>จัดการทริป</h2>
             {trip.status === "confirmed" && <form action={completeTrip}>
               <input type="hidden" name="tripId" value={tripId} />
@@ -231,11 +249,12 @@ export default async function TripPage({
               <input type="hidden" name="tripId" value={tripId} />
               <label htmlFor="cancel-reason">เหตุผลที่ยกเลิก (ไม่บังคับ)</label>
               <input id="cancel-reason" name="reason" maxLength={500} />
-              <button className="text-button" type="submit">ยกเลิกทริป</button>
+              <button className="text-button danger" type="submit">ยกเลิกทริป</button>
             </form>
           </section>
         )}
+        </div>
       </div>
-    </main>
+    </main></>
   );
 }
