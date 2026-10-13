@@ -9,3 +9,17 @@
 | [features/README.md](features/README.md) | ค้นหาสเปกพฤติกรรมของแต่ละฟีเจอร์ |
 
 `TRIPSYNC_APP_STRUCTURE.md` ที่รากโปรเจกต์เป็นร่างแนวคิดแรก หากรายละเอียดขัดกัน ให้ยึดเอกสารใน `docs/` ซึ่งรวมข้อสรุปหลังทบทวนมุมผู้ใช้และระบบแล้ว
+
+## ทดสอบฐานข้อมูลในเครื่อง
+
+เมื่อ Docker พร้อม ให้รันจากราก repository:
+
+```powershell
+npx.cmd supabase@latest start
+npx.cmd supabase@latest db reset --local
+npx.cmd supabase@latest test db --local
+```
+
+`db reset --local` สร้างฐานข้อมูลทดลองใหม่ตาม `supabase/migrations/` และล้างข้อมูล local เดิม ชุดทดสอบใน `supabase/tests/` ใช้ pgTAP พร้อม SQL assertions ตรวจสิทธิ์และกติกา ทุกไฟล์สร้างข้อมูลทดสอบใน transaction และ rollback เมื่อจบ
+
+การทดสอบนี้ใช้ผู้ใช้จำลองในฐานข้อมูล ส่วนการตรวจ Google login และเส้นทางบนเว็บต้องทดสอบเพิ่มด้วยสองบัญชีจริงตาม `BUILD_PLAN.md`

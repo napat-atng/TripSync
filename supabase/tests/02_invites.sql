@@ -1,4 +1,7 @@
 begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
+select plan(1);
 
 insert into auth.users (id) values
   ('00000000-0000-0000-0000-0000000000a1'),
@@ -72,4 +75,7 @@ begin
 end;
 $$;
 
+reset role;
+select pass('02_invites assertions');
+select * from finish();
 rollback;

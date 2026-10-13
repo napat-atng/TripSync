@@ -1,4 +1,7 @@
 begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
+select plan(1);
 
 insert into auth.users (id) values ('00000000-0000-0000-0000-0000000000a1');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
@@ -28,4 +31,7 @@ begin
 end;
 $$;
 
+reset role;
+select pass('09_timezone assertions');
+select * from finish();
 rollback;
