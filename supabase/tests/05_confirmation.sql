@@ -29,6 +29,13 @@ insert into public.place_options (id, trip_id, name, created_by) values
   ('00000000-0000-0000-0000-000000000442', '00000000-0000-0000-0000-000000000222',
    'Second place', '00000000-0000-0000-0000-0000000000a1');
 
+insert into public.trips (id, group_id, organizer_id, title, vote_deadline) values
+  ('00000000-0000-0000-0000-000000000223', '00000000-0000-0000-0000-000000000111',
+   '00000000-0000-0000-0000-0000000000a1', 'Other trip', now() + interval '1 hour');
+insert into public.date_options (id, trip_id, starts_on, ends_on, created_by) values
+  ('00000000-0000-0000-0000-000000000999', '00000000-0000-0000-0000-000000000223',
+   current_date + 7, current_date + 7, '00000000-0000-0000-0000-0000000000a1');
+
 set local role authenticated;
 select public.open_voting('00000000-0000-0000-0000-000000000222');
 do $$

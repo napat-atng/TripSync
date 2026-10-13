@@ -1,5 +1,12 @@
 -- The project-provided event trigger runs as postgres; API roles need no EXECUTE.
-revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+-- Local Supabase installations do not always contain this hosted helper.
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    execute 'revoke execute on function public.rls_auto_enable() from public, anon, authenticated';
+  end if;
+end;
+$$;
 
 create index date_options_created_by_idx on public.date_options (created_by);
 create index date_votes_participant_idx on public.date_votes (trip_id, user_id);

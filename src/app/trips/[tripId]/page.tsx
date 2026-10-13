@@ -132,7 +132,7 @@ export default async function TripPage({
           deadline={trip.vote_deadline} timezone={trip.timezone} dateLabel={dateLabel}
           placeName={sharePlace?.name} meetingAt={trip.meeting_at} meetingPoint={trip.meeting_point}
         />}
-        {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด"} กรุณาลองอีกครั้ง</p>}
+        {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"}</p>}
         <div className="next-action" aria-label="สิ่งที่ต้องทำตอนนี้">
           <strong>สิ่งที่ต้องทำตอนนี้</strong>
           {nextAction.href ? <a href={nextAction.href}>{nextAction.text} ↓</a> : <span>{nextAction.text}</span>}
