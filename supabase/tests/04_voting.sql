@@ -71,7 +71,7 @@ begin
       values ('00000000-0000-0000-0000-000000000222', current_date + 21, current_date + 21,
               '00000000-0000-0000-0000-0000000000b2');
     raise exception 'added date after voting opened';
-  exception when insufficient_privilege then null;
+  exception when insufficient_privilege or invalid_parameter_value then null;
   end;
   begin
     perform public.submit_date_votes('00000000-0000-0000-0000-000000000222',

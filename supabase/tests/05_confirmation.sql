@@ -12,7 +12,7 @@ insert into public.group_members (group_id, user_id) values
   ('00000000-0000-0000-0000-000000000111', '00000000-0000-0000-0000-0000000000c3');
 insert into public.trips (id, group_id, organizer_id, title, vote_deadline, status) values
   ('00000000-0000-0000-0000-000000000222', '00000000-0000-0000-0000-000000000111',
-   '00000000-0000-0000-0000-0000000000a1', 'Confirm test', now() + interval '1 hour', 'voting');
+   '00000000-0000-0000-0000-0000000000a1', 'Confirm test', now() + interval '1 hour', 'draft');
 insert into public.trip_participants (trip_id, user_id, invitation_status) values
   ('00000000-0000-0000-0000-000000000222', '00000000-0000-0000-0000-0000000000b2', 'interested');
 insert into public.date_options (id, trip_id, starts_on, ends_on, created_by) values
@@ -27,6 +27,7 @@ insert into public.place_options (id, trip_id, name, created_by) values
    'Second place', '00000000-0000-0000-0000-0000000000a1');
 
 set local role authenticated;
+select public.open_voting('00000000-0000-0000-0000-000000000222');
 do $$
 declare
   first_meeting timestamptz;
