@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { zonedInputValue } from "@/features/trips/time";
 
 async function tripContext(tripId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(tripId)) redirect("/groups");
@@ -10,7 +11,7 @@ async function tripContext(tripId: string) {
   const { data: auth, error: authError } = await supabase.auth.getClaims();
   if (authError || !auth?.claims?.sub) redirect("/?next=%2Fgroups");
   const { data: trip } = await supabase.from("trips")
-    .select("id, group_id, organizer_id, status, vote_deadline")
+    .select("id, group_id, organizer_id, status, vote_deadline, timezone")
     .eq("id", tripId)
     .maybeSingle();
   if (!trip) redirect("/groups");
@@ -34,7 +35,11 @@ export async function addDateOption(formData: FormData): Promise<void> {
   const { supabase, userId, trip, participant } = await tripContext(tripId);
   if (trip.status !== "draft" || !participant || participant.invitation_status === "declined"
       || !/^\d{4}-\d{2}-\d{2}$/.test(startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(endsOn)
-      || endsOn < startsOn) redirect(`/trips/${tripId}?error=date-option`);
+      || endsOn < startsOn
+      || endsOn < zonedInputValue(new Date().toISOString(), trip.timezone).slice(0, 10)
+      || endsOn < zonedInputValue(trip.vote_deadline, trip.timezone).slice(0, 10)) {
+    redirect(`/trips/${tripId}?error=date-option`);
+  }
   const { error } = await supabase.from("date_options").insert({
     trip_id: tripId, starts_on: startsOn, ends_on: endsOn, created_by: userId,
   });
@@ -91,7 +96,9 @@ export async function editDateOption(formData: FormData): Promise<void> {
   const { supabase, userId, trip } = await tripContext(tripId);
   if (!/^[0-9a-f-]{36}$/i.test(optionId) || trip.organizer_id !== userId
       || trip.status !== "draft" || !/^\d{4}-\d{2}-\d{2}$/.test(startsOn)
-      || !/^\d{4}-\d{2}-\d{2}$/.test(endsOn) || endsOn < startsOn) {
+      || !/^\d{4}-\d{2}-\d{2}$/.test(endsOn) || endsOn < startsOn
+      || endsOn < zonedInputValue(new Date().toISOString(), trip.timezone).slice(0, 10)
+      || endsOn < zonedInputValue(trip.vote_deadline, trip.timezone).slice(0, 10)) {
     redirect(`/trips/${tripId}?error=date-option`);
   }
   const { data, error } = await supabase.from("date_options")

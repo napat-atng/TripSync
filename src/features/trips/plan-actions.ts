@@ -11,7 +11,7 @@ async function context(tripId: string) {
   const { data: auth, error: authError } = await supabase.auth.getClaims();
   if (authError || !auth?.claims?.sub) redirect("/?next=%2Fgroups");
   const { data: trip } = await supabase.from("trips")
-    .select("id, group_id, organizer_id, status, vote_deadline, timezone")
+    .select("id, group_id, organizer_id, title, status, vote_deadline, timezone")
     .eq("id", tripId).maybeSingle();
   if (!trip) redirect("/groups");
   return { supabase, userId: auth.claims.sub, trip };
@@ -84,11 +84,27 @@ export async function cancelTrip(formData: FormData): Promise<void> {
   const tripId = String(formData.get("tripId") ?? "");
   const reason = String(formData.get("reason") ?? "").trim();
   const { supabase, userId, trip } = await context(tripId);
-  if (trip.organizer_id !== userId || !["draft", "voting", "confirmed"].includes(trip.status)
+  if (formData.get("confirmCancel") !== "yes"
+      || trip.organizer_id !== userId || !["draft", "voting", "confirmed"].includes(trip.status)
       || reason.length > 500) redirect(`/trips/${tripId}?error=cancel`);
   const { error } = await supabase.rpc("cancel_trip", { p_trip_id: tripId, p_reason: reason });
   if (error) redirect(`/trips/${tripId}?error=cancel`);
   finish(tripId);
+}
+
+export async function deleteTrip(formData: FormData): Promise<void> {
+  const tripId = String(formData.get("tripId") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+  const { supabase, userId, trip } = await context(tripId);
+  if (trip.organizer_id !== userId || confirmation !== trip.title
+      || !["draft", "cancelled", "completed"].includes(trip.status)) {
+    redirect(`/trips/${tripId}?error=delete`);
+  }
+  const { error } = await supabase.rpc("delete_trip", { p_trip_id: tripId });
+  if (error) redirect(`/trips/${tripId}?error=delete`);
+  revalidatePath(`/groups/${trip.group_id}`);
+  revalidatePath("/groups");
+  redirect(`/groups/${trip.group_id}`);
 }
 
 export async function completeTrip(formData: FormData): Promise<void> {

@@ -81,6 +81,9 @@ export async function ConfirmationSection({
   const myRsvp = currentRsvps.find((item) => item.user_id === userId);
   const hadPastRsvp = rsvps.some((item) => item.user_id === userId && item.plan_version < trip.plan_version);
   const canRsvp = trip.status === "confirmed" && eligible.has(userId);
+  const visibleParticipants = participants.filter((person) => groupUserIds.includes(person.user_id));
+  const rsvpByUser = new Map(currentRsvps.map((item) => [item.user_id, item.response]));
+  const unansweredCount = eligible.size - currentRsvps.length;
 
   return (
     <section id="confirmation-section" className="group-list">
@@ -108,10 +111,12 @@ export async function ConfirmationSection({
       {trip.status === "voting" && !isOrganizer && <p>รอผู้จัดเลือกวันและสถานที่จากผลโหวต</p>}
       {trip.plan_version > 0 && <div className="rsvp-summary">
         <h3>ตอบรับแผนปัจจุบัน</h3>
-        <p>ไป {currentRsvps.filter((item) => item.response === "going").length} · อาจไป {currentRsvps.filter((item) => item.response === "maybe").length} · ไม่ไป {currentRsvps.filter((item) => item.response === "not_going").length}</p>
+        <p>ไป {currentRsvps.filter((item) => item.response === "going").length} · อาจไป {currentRsvps.filter((item) => item.response === "maybe").length} · ไม่ไป {currentRsvps.filter((item) => item.response === "not_going").length} · ยังไม่ตอบ {unansweredCount}</p>
         <p>ผู้ที่ไป: {currentRsvps.filter((item) => item.response === "going")
           .map((item) => names.get(item.user_id) ?? item.user_id.slice(0, 8)).join(", ") || "ยังไม่มี"}</p>
         {canRsvp && <>
+          {participants.find((person) => person.user_id === userId)?.invitation_status === "pending"
+            && <p className="field-hint">เมื่อตอบรับแผน คำเชิญของคุณจะเปลี่ยนเป็นเข้าร่วมทริปด้วย</p>}
           <p>{myRsvp ? `คำตอบของคุณ: ${({ going: "ไป", maybe: "อาจไป", not_going: "ไม่ไป" } as Record<string, string>)[myRsvp.response] ?? myRsvp.response}` : hadPastRsvp ? "แผนเปลี่ยนแล้ว ต้องตอบรับใหม่" : "ยังไม่ตอบรับแผนนี้"}</p>
           <form action={submitRsvp} className="inline-actions">
             <input type="hidden" name="tripId" value={trip.id} />
@@ -120,6 +125,24 @@ export async function ConfirmationSection({
             <button className={myRsvp?.response === "not_going" ? "primary-button" : "secondary-button"} type="submit" name="response" value="not_going" aria-pressed={myRsvp?.response === "not_going"}>ไม่ไป</button>
           </form>
         </>}
+      </div>}
+      {trip.plan_version > 0 && <div className="response-matrix">
+        <h3>สถานะเพื่อนต่อแผนล่าสุด</h3>
+        <div className="table-scroll">
+          <table>
+            <thead><tr><th scope="col">เพื่อน</th><th scope="col">คำเชิญ</th><th scope="col">ตอบรับแผน</th></tr></thead>
+            <tbody>{visibleParticipants.map((person) => {
+              const declined = person.invitation_status === "declined";
+              const response = rsvpByUser.get(person.user_id);
+              return <tr key={person.user_id}>
+                <th scope="row">{names.get(person.user_id) ?? person.user_id.slice(0, 8)}</th>
+                <td>{declined ? "ไม่ร่วมทริป" : person.invitation_status === "pending" ? "ยังไม่ตอบคำเชิญ" : "สนใจร่วมทริป"}</td>
+                <td>{declined ? "ไม่ต้องตอบ" : response === "going" ? "ไป" : response === "maybe" ? "อาจไป"
+                  : response === "not_going" ? "ไม่ไป" : "ยังไม่ตอบแผนนี้"}</td>
+              </tr>;
+            })}</tbody>
+          </table>
+        </div>
       </div>}
     </section>
   );

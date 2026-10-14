@@ -22,9 +22,13 @@ export function PlanForm({
 }) {
   const [dateId, setDateId] = useState(selectedDateId ?? dates[0]?.id ?? "");
   const [placeId, setPlaceId] = useState(selectedPlaceId ?? places[0]?.id ?? "");
+  const [meetingTime, setMeetingTime] = useState(meetingLocal ?? "");
+  const [point, setPoint] = useState(meetingPoint ?? "");
   const date = dates.find((item) => item.id === dateId);
   const place = places.find((item) => item.id === placeId);
   const placeSupport = place?.byDate[dateId] ?? 0;
+  const unchanged = mode === "change" && dateId === selectedDateId && placeId === selectedPlaceId
+    && meetingTime === (meetingLocal ?? "") && point.trim() === (meetingPoint ?? "").trim();
 
   return (
     <form action={savePlan} className="group-form">
@@ -46,10 +50,11 @@ export function PlanForm({
       {date && date.available <= 1 && <p className="form-note">วันดังกล่าวมีคนว่างเพียง {date.available} คน โปรดตรวจแผนก่อนยืนยัน</p>}
       {place && placeSupport <= 1 && <p className="form-note">สถานที่นี้มีคนที่ว่างในวันที่เลือกสนใจเพียง {placeSupport} คน</p>}
       <label htmlFor="meeting-time">เวลานัดพบ ({timezone})</label>
-      <input id="meeting-time" name="meetingLocal" type="datetime-local" required defaultValue={meetingLocal} />
+      <input id="meeting-time" name="meetingLocal" type="datetime-local" required value={meetingTime} onChange={(event) => setMeetingTime(event.target.value)} />
       <label htmlFor="meeting-point">จุดนัดพบ</label>
-      <input id="meeting-point" name="meetingPoint" required maxLength={500} defaultValue={meetingPoint ?? ""} />
-      <button className="primary-button" type="submit">
+      <input id="meeting-point" name="meetingPoint" required maxLength={500} value={point} onChange={(event) => setPoint(event.target.value)} />
+      {unchanged && <p className="field-hint">แผนยังเหมือนเดิม เปลี่ยนข้อมูลก่อนบันทึก</p>}
+      <button className="primary-button" type="submit" disabled={unchanged}>
         {mode === "confirm" ? "ยืนยันแผน" : "บันทึกแผนใหม่และขอให้ตอบรับอีกครั้ง"}
       </button>
     </form>

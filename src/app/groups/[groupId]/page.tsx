@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { CreateInvite } from "@/components/CreateInvite";
 import { revokeInvite } from "@/features/access/invite-actions";
 import { createTrip } from "@/features/trips/actions";
-import { manageGroupMember, transferOrganizer, updateGroup } from "@/features/groups/actions";
+import { deleteGroup, leaveGroup, manageGroupMember, transferOrganizer, updateGroup } from "@/features/groups/actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/SiteHeader";
 
@@ -45,6 +45,7 @@ export default async function GroupPage({
         .is("trip_id", null)
         .order("created_at", { ascending: false })
     : { data: null };
+  const hasActiveTrips = trips?.some((trip) => ["voting", "confirmed"].includes(trip.status)) ?? false;
 
   return (
     <><SiteHeader /><main className="page">
@@ -59,6 +60,9 @@ export default async function GroupPage({
         {pageError === "group" && <p className="form-note" role="alert">แก้ข้อมูลกลุ่มไม่สำเร็จ</p>}
         {pageError === "member" && <p className="form-note" role="alert">จัดการสมาชิกไม่สำเร็จ อาจเป็น admin คนสุดท้าย หรือยังเป็นผู้จัดทริปที่ไม่จบ</p>}
         {pageError === "transfer" && <p className="form-note" role="alert">โอนผู้จัดทริปไม่สำเร็จ</p>}
+        {pageError === "leave" && <p className="form-note" role="alert">ออกจากกลุ่มไม่ได้ หากเป็นผู้ดูแลคนสุดท้ายหรือยังจัดทริปที่ไม่จบ ให้โอนหน้าที่ก่อน</p>}
+        {pageError === "delete" && <p className="form-note" role="alert">ลบกลุ่มไม่ได้ กรุณายกเลิกทริปที่กำลังโหวตหรือยืนยันอยู่ก่อน</p>}
+        {pageError === "delete-confirmation" && <p className="form-note" role="alert">ชื่อกลุ่มที่พิมพ์เพื่อยืนยันไม่ตรงกัน</p>}
         <div className="group-dashboard">
         {membership?.role === "admin" && <section className="group-list group-settings">
           <h2>แก้ข้อมูลกลุ่ม</h2>
@@ -76,14 +80,25 @@ export default async function GroupPage({
           <ul>{members?.map((member) => <li key={member.user_id}>
             <strong>{names.get(member.user_id) ?? member.user_id.slice(0, 8)}</strong>
             <span>{member.role === "admin" ? "ผู้ดูแล" : "สมาชิก"}</span>
-            {membership?.role === "admin" && <form action={manageGroupMember} className="inline-actions">
-              <input type="hidden" name="groupId" value={groupId} />
-              <input type="hidden" name="userId" value={member.user_id} />
-              <button className="text-button" type="submit" name="action" value={member.role === "admin" ? "demote" : "promote"}>
-                {member.role === "admin" ? "ลดเป็นสมาชิก" : "ตั้งเป็นผู้ดูแล"}
-              </button>
-              <button className="text-button" type="submit" name="action" value="remove">นำออกจากกลุ่ม</button>
-            </form>}
+            {membership?.role === "admin" && <>
+              <form action={manageGroupMember}>
+                <input type="hidden" name="groupId" value={groupId} />
+                <input type="hidden" name="userId" value={member.user_id} />
+                <button className="text-button" type="submit" name="action" value={member.role === "admin" ? "demote" : "promote"}>
+                  {member.role === "admin" ? "ลดเป็นสมาชิก" : "ตั้งเป็นผู้ดูแล"}
+                </button>
+              </form>
+              {member.user_id !== auth.claims.sub && <details>
+                <summary>นำออกจากกลุ่ม</summary>
+                <form action={manageGroupMember} className="group-form">
+                  <input type="hidden" name="groupId" value={groupId} />
+                  <input type="hidden" name="userId" value={member.user_id} />
+                  <input type="hidden" name="action" value="remove" />
+                  <label className="check-row"><input type="checkbox" name="confirmRemove" value="yes" required /> ยืนยันการนำออก คำตอบทริปของสมาชิกคนนี้ในกลุ่มจะถูกลบ</label>
+                  <button className="secondary-button danger-button" type="submit">นำออกจากกลุ่ม</button>
+                </form>
+              </details>}
+            </>}
           </li>)}</ul>
         </section>
         {membership?.role === "admin" && <CreateInvite groupId={group.id} />}
@@ -150,6 +165,27 @@ export default async function GroupPage({
               )}
             </li>)}</ul>
           ) : <div className="empty-state"><p>ยังไม่มีทริปในกลุ่มนี้ สร้างทริปแรกจากแบบฟอร์มด้านข้าง</p></div>}
+        </section>
+        <section className="group-list group-lifecycle">
+          <h2>การเป็นสมาชิกและข้อมูลกลุ่ม</h2>
+          <p className="section-intro">ออกจากกลุ่มแล้วคุณจะไม่เห็นทริปของกลุ่ม และคำตอบทริปของคุณในกลุ่มจะถูกลบ</p>
+          <form action={leaveGroup} className="group-form">
+            <input type="hidden" name="groupId" value={groupId} />
+            <label className="check-row"><input type="checkbox" name="confirmLeave" value="yes" required /> เข้าใจและต้องการออกจากกลุ่ม</label>
+            <button className="secondary-button" type="submit">ออกจากกลุ่ม</button>
+          </form>
+          {membership?.role === "admin" && <details className="danger-zone">
+            <summary>ลบกลุ่มถาวร</summary>
+            <p>การลบกลุ่มจะลบทริป คำตอบ และลิงก์เชิญทั้งหมดของกลุ่ม กู้คืนจากหน้าเว็บไม่ได้</p>
+            {hasActiveTrips ? <p>ยกเลิกทริปที่กำลังโหวตหรือยืนยันอยู่ก่อน จึงจะลบกลุ่มได้</p> : (
+              <form action={deleteGroup} className="group-form">
+                <input type="hidden" name="groupId" value={groupId} />
+                <label htmlFor="delete-group-confirmation">พิมพ์ชื่อกลุ่ม “{group.name}” เพื่อยืนยัน</label>
+                <input id="delete-group-confirmation" name="confirmation" required autoComplete="off" />
+                <button className="secondary-button danger-button" type="submit">ลบกลุ่มถาวร</button>
+              </form>
+            )}
+          </details>}
         </section>
         </div>
       </div>

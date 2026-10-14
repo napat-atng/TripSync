@@ -6,7 +6,7 @@ import { addTripParticipant, removeTripParticipant, respondToTripInvitation } fr
 import { VotingSection } from "@/features/voting/VotingSection";
 import { ConfirmationSection } from "@/features/trips/ConfirmationSection";
 import { ShareTrip } from "@/components/ShareTrip";
-import { cancelTrip, completeTrip } from "@/features/trips/plan-actions";
+import { cancelTrip, completeTrip, deleteTrip } from "@/features/trips/plan-actions";
 import { editDraftTrip } from "@/features/trips/actions";
 import { zonedInputValue } from "@/features/trips/time";
 import { isBeforeDeadline } from "@/features/voting/time";
@@ -17,10 +17,10 @@ const errorMessages: Record<string, string> = {
   revoke: "ยกเลิกลิงก์ไม่สำเร็จ",
   participant: "แก้ผู้ร่วมทริปไม่สำเร็จ",
   response: "ตอบคำเชิญไม่สำเร็จ",
-  "date-option": "เพิ่มตัวเลือกวันไม่สำเร็จ",
+  "date-option": "บันทึกวันไม่สำเร็จ วันสิ้นสุดต้องไม่ก่อนวันปิดโหวตหรืออยู่ในอดีต",
   "place-option": "เพิ่มตัวเลือกสถานที่ไม่สำเร็จ",
   option: "ลบตัวเลือกไม่สำเร็จ",
-  open: "เปิดโหวตไม่สำเร็จ ตรวจว่ามีวันและสถานที่อย่างน้อยอย่างละหนึ่งตัวเลือก",
+  open: "เปิดโหวตไม่สำเร็จ ตรวจว่ามีวันและสถานที่อย่างน้อยอย่างละหนึ่งตัวเลือก และวันเดินทางยังไม่ผ่านไป",
   "voting-closed": "หมดเวลาโหวตแล้ว",
   "date-vote": "บันทึกคำตอบวันไม่สำเร็จ",
   "place-vote": "บันทึกคำตอบสถานที่ไม่สำเร็จ",
@@ -28,6 +28,7 @@ const errorMessages: Record<string, string> = {
   rsvp: "บันทึกการตอบรับไม่สำเร็จ",
   cancel: "ยกเลิกทริปไม่สำเร็จ",
   complete: "จบทริปไม่สำเร็จ ต้องรอให้วันเดินทางสิ้นสุดก่อน",
+  delete: "ลบทริปไม่สำเร็จ ตรวจชื่อที่พิมพ์ หรือยกเลิกทริปที่กำลังดำเนินการก่อน",
   edit: "แก้รายละเอียดทริปไม่สำเร็จ ตรวจข้อมูลและเวลาปิดโหวต",
 };
 const statusLabels: Record<string, string> = {
@@ -39,7 +40,7 @@ const statusLabels: Record<string, string> = {
 };
 const invitationLabels: Record<string, string> = {
   pending: "รอตอบคำเชิญ",
-  interested: "สนใจไป",
+  interested: "เข้าร่วมทริป",
   declined: "ไม่ร่วมทริป",
 };
 
@@ -129,6 +130,8 @@ export default async function TripPage({
     ? shareDate.starts_on === shareDate.ends_on
       ? shareDate.starts_on : `${shareDate.starts_on} – ${shareDate.ends_on}`
     : undefined;
+  const canComplete = trip.status === "confirmed" && !!shareDate
+    && shareDate.ends_on < zonedInputValue(new Date().toISOString(), trip.timezone).slice(0, 10);
 
   return (
     <><SiteHeader /><main className="page">
@@ -172,11 +175,23 @@ export default async function TripPage({
           <section id="invitation-section" className="group-list trip-invitation">
             <h2>คำเชิญของคุณ</h2>
             <p>สถานะ: {invitationLabels[myParticipation.invitation_status] ?? myParticipation.invitation_status}</p>
-            <form action={respondToTripInvitation} className="inline-actions">
+            <p className="field-hint">การรับคำเชิญต่างจากการตอบรับแผนเดินทาง หลังยืนยันแผนแล้วคุณต้องเลือกว่าจะไปหรือไม่อีกครั้ง</p>
+            {myParticipation.invitation_status !== "interested" && <form action={respondToTripInvitation}>
               <input type="hidden" name="tripId" value={tripId} />
-              <button className="primary-button" type="submit" name="status" value="interested">สนใจไป</button>
-              <button className="text-button" type="submit" name="status" value="declined">ไม่ร่วมทริป</button>
-            </form>
+              <button className="primary-button" type="submit" name="status" value="interested">
+                {myParticipation.invitation_status === "declined" ? "กลับเข้าร่วมทริป" : "รับคำเชิญ"}
+              </button>
+            </form>}
+            {myParticipation.invitation_status !== "declined" && <details className="danger-zone">
+              <summary>ไม่ร่วมทริป</summary>
+              <p>คะแนนโหวตและคำตอบรับแผนปัจจุบันของคุณจะถูกลบ หากกลับเข้าร่วมจะต้องตอบใหม่</p>
+              <form action={respondToTripInvitation} className="group-form">
+                <input type="hidden" name="tripId" value={tripId} />
+                <input type="hidden" name="status" value="declined" />
+                <label className="check-row"><input type="checkbox" name="confirmDecline" value="yes" required /> ยืนยันว่าไม่ร่วมทริปนี้</label>
+                <button className="secondary-button danger-button" type="submit">ไม่ร่วมทริป</button>
+              </form>
+            </details>}
           </section>
         )}
         {isOrganizer && trip.status !== "cancelled" && trip.status !== "completed" && (
@@ -238,19 +253,31 @@ export default async function TripPage({
           groupUserIds={userIds}
           names={names}
         />
-        {isOrganizer && ["draft", "voting", "confirmed"].includes(trip.status) && (
+        {isOrganizer && (
           <section className="group-list trip-management">
             <h2>จัดการทริป</h2>
-            {trip.status === "confirmed" && <form action={completeTrip}>
+            {trip.status === "confirmed" && canComplete && <form action={completeTrip}>
               <input type="hidden" name="tripId" value={tripId} />
-              <button className="text-button" type="submit">ทำเครื่องหมายว่าจบทริปแล้ว</button>
+              <button className="secondary-button" type="submit">ทำเครื่องหมายว่าจบทริปแล้ว</button>
             </form>}
-            <form action={cancelTrip} className="group-form">
+            {trip.status === "confirmed" && !canComplete && <p className="form-note">ปุ่มจบทริปจะใช้ได้หลังวันเดินทางสิ้นสุด</p>}
+            {["draft", "voting", "confirmed"].includes(trip.status) && <form action={cancelTrip} className="group-form">
               <input type="hidden" name="tripId" value={tripId} />
               <label htmlFor="cancel-reason">เหตุผลที่ยกเลิก (ไม่บังคับ)</label>
               <input id="cancel-reason" name="reason" maxLength={500} />
+              <label className="check-row"><input type="checkbox" name="confirmCancel" value="yes" required /> ยืนยันว่าต้องการยกเลิกทริปนี้ ผู้ร่วมทริปจะโหวตหรือตอบรับไม่ได้อีก</label>
               <button className="text-button danger" type="submit">ยกเลิกทริป</button>
-            </form>
+            </form>}
+            {["draft", "cancelled", "completed"].includes(trip.status) && <details className="danger-zone">
+              <summary>ลบทริปถาวร</summary>
+              <p>การลบจะลบคำตอบและประวัติแจ้งเตือนของทริป กู้คืนจากหน้าเว็บไม่ได้</p>
+              <form action={deleteTrip} className="group-form">
+                <input type="hidden" name="tripId" value={tripId} />
+                <label htmlFor="delete-trip-confirmation">พิมพ์ชื่อทริป “{trip.title}” เพื่อยืนยัน</label>
+                <input id="delete-trip-confirmation" name="confirmation" required autoComplete="off" />
+                <button className="secondary-button danger-button" type="submit">ลบทริปถาวร</button>
+              </form>
+            </details>}
           </section>
         )}
         </div>

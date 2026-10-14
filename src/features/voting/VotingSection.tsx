@@ -5,12 +5,14 @@ import {
 } from "./actions";
 import { tallyVotes, type Participant } from "./tally";
 import { isBeforeDeadline, isDeadlineNear } from "./time";
+import { zonedInputValue } from "@/features/trips/time";
 
 type Trip = {
   id: string;
   status: string;
   organizer_id: string;
   vote_deadline: string;
+  timezone: string;
 };
 
 export async function VotingSection({
@@ -60,6 +62,19 @@ export async function VotingSection({
   const mySubmission = submissions.find((item) => item.user_id === userId);
   const deadlineSoon = canSubmit && isDeadlineNear(trip.vote_deadline);
   const needsAnswer = !mySubmission?.date_submitted_at || !mySubmission?.place_submitted_at;
+  const visibleParticipants = participants.filter((person) => groupUserIds.includes(person.user_id));
+  const dateAnswers = new Map(dateVotes.map((vote) => [`${vote.user_id}:${vote.option_id}`, vote.response]));
+  const selectedPlaces = new Map(visibleParticipants.map((person) => [
+    person.user_id,
+    places.filter((place) => placeVotes.some((vote) =>
+      vote.user_id === person.user_id && vote.option_id === place.id)).map((place) => place.name),
+  ]));
+  const submissionByUser = new Map(submissions.map((item) => [item.user_id, item]));
+  const latestValidDate = [
+    zonedInputValue(new Date().toISOString(), trip.timezone).slice(0, 10),
+    zonedInputValue(trip.vote_deadline, trip.timezone).slice(0, 10),
+  ].sort().at(-1) ?? "";
+  const hasInvalidDates = dates.some((option) => option.ends_on < latestValidDate);
 
   return (
     <section id="vote-section" className="group-list">
@@ -100,6 +115,7 @@ export async function VotingSection({
         <input id="date-start" name="startsOn" type="date" required />
         <label htmlFor="date-end">วันสิ้นสุด</label>
         <input id="date-end" name="endsOn" type="date" required />
+        <p className="field-hint">วันสิ้นสุดต้องไม่ผ่านมาแล้ว และต้องไม่ก่อนวันปิดโหวตของทริป</p>
         <button type="submit" className="primary-button">เสนอวัน</button>
       </form>}
 
@@ -143,15 +159,50 @@ export async function VotingSection({
 
       {isOrganizer && trip.status === "draft" && <form action={openVoting}>
         <input type="hidden" name="tripId" value={trip.id} />
-        <button className="primary-button" type="submit" disabled={!dates.length || !places.length || !isBeforeDeadline(trip.vote_deadline)}>
+        <button className="primary-button" type="submit" disabled={!dates.length || !places.length || hasInvalidDates || !isBeforeDeadline(trip.vote_deadline)}>
           เปิดโหวตและล็อกตัวเลือก
         </button>
+        {(!dates.length || !places.length) && <p className="field-hint">เพิ่มวันและสถานที่อย่างน้อยอย่างละหนึ่งตัวเลือกก่อนเปิดโหวต</p>}
+        {hasInvalidDates && <p className="field-hint">มีตัวเลือกวันที่สิ้นสุดก่อนวันปิดโหวตหรือผ่านมาแล้ว แก้หรือลบตัวเลือกนั้นก่อน</p>}
+        {!isBeforeDeadline(trip.vote_deadline) && <p className="field-hint">เวลาปิดโหวตผ่านไปแล้ว ผู้จัดต้องแก้เวลาปิดโหวตให้เป็นอนาคตก่อน</p>}
       </form>}
 
       {trip.status === "voting" && <div className="vote-summary">
         <p>ตอบวันแล้ว {summary.dateSubmittedCount}/{summary.eligibleCount} · ตอบสถานที่แล้ว {summary.placeSubmittedCount}/{summary.eligibleCount}</p>
         {!!summary.datePendingUserIds.length && <p>ยังไม่ตอบวัน: {summary.datePendingUserIds.map((id) => names.get(id) ?? id.slice(0, 8)).join(", ")}</p>}
         {!!summary.placePendingUserIds.length && <p>ยังไม่ตอบสถานที่: {summary.placePendingUserIds.map((id) => names.get(id) ?? id.slice(0, 8)).join(", ")}</p>}
+      </div>}
+      {trip.status !== "draft" && <div className="response-matrix">
+        <h3>คำตอบของเพื่อนแต่ละคน</h3>
+        <p className="section-intro">“ยังไม่ตอบ” ต่างจาก “ไม่ว่าง” และคนที่ไม่ร่วมทริปจะไม่ถูกนับในยอดรวม</p>
+        <div className="table-scroll">
+          <table>
+            <thead><tr>
+              <th scope="col">เพื่อน</th>
+              {dates.map((option) => <th scope="col" key={option.id}>{option.starts_on}{option.ends_on !== option.starts_on && ` – ${option.ends_on}`}</th>)}
+              <th scope="col">สถานที่ที่เลือก</th>
+            </tr></thead>
+            <tbody>{visibleParticipants.map((person) => {
+              const submission = submissionByUser.get(person.user_id);
+              const declined = person.invitation_status === "declined";
+              const placeNames = selectedPlaces.get(person.user_id) ?? [];
+              return <tr key={person.user_id}>
+                <th scope="row">{names.get(person.user_id) ?? person.user_id.slice(0, 8)}
+                  <small>{declined ? "ไม่ร่วมทริป" : person.invitation_status === "pending"
+                    ? "รอตอบคำเชิญ" : "ร่วมทริป"}</small>
+                </th>
+                {dates.map((option) => {
+                  const answer = dateAnswers.get(`${person.user_id}:${option.id}`);
+                  return <td key={option.id}>{declined ? "ไม่นับ" : !submission?.date_submitted_at ? "ยังไม่ตอบ"
+                    : answer === "available" ? "ว่าง" : answer === "maybe" ? "อาจว่าง"
+                    : answer === "unavailable" ? "ไม่ว่าง" : "ยังไม่ตอบ"}</td>;
+                })}
+                <td>{declined ? "ไม่นับ" : !submission?.place_submitted_at ? "ยังไม่ตอบ"
+                  : placeNames.length ? placeNames.join(", ") : "ไม่มีที่ที่เลือก"}</td>
+              </tr>;
+            })}</tbody>
+          </table>
+        </div>
       </div>}
 
       {canSubmit && <>
@@ -179,7 +230,8 @@ export async function VotingSection({
         </form>
         <form action={submitPlaceVotes}>
           <input type="hidden" name="tripId" value={trip.id} />
-          <button className="text-button" type="submit">ไม่มีที่ที่ต้องการ</button>
+          <p className="field-hint">หากไม่สนใจสถานที่ใด ปุ่มนี้จะบันทึกคำตอบและแทนที่สถานที่ที่เคยเลือก</p>
+          <button className="secondary-button" type="submit">บันทึกว่าไม่เลือกสถานที่ใด</button>
         </form>
       </>}
     </section>

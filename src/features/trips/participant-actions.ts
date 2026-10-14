@@ -71,16 +71,17 @@ export async function respondToTripInvitation(formData: FormData): Promise<void>
   const tripId = String(formData.get("tripId") ?? "");
   const status = String(formData.get("status") ?? "");
   if (!validId(tripId) || !["interested", "declined"].includes(status)) redirect("/groups");
+  if (status === "declined" && formData.get("confirmDecline") !== "yes") {
+    redirect(`/trips/${tripId}?error=response`);
+  }
 
   const supabase = await createServerSupabaseClient();
   const { data: auth, error: authError } = await supabase.auth.getClaims();
   if (authError || !auth?.claims?.sub) redirect("/?next=%2Fgroups");
-  const { data, error } = await supabase.from("trip_participants")
-    .update({ invitation_status: status })
-    .eq("trip_id", tripId)
-    .eq("user_id", auth.claims.sub)
-    .select("user_id");
-  if (error || !data?.length) redirect(`/trips/${tripId}?error=response`);
+  const { error } = await supabase.rpc("respond_to_trip_invitation", {
+    p_trip_id: tripId, p_status: status,
+  });
+  if (error) redirect(`/trips/${tripId}?error=response`);
   revalidatePath(`/trips/${tripId}`);
   redirect(`/trips/${tripId}`);
 }

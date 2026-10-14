@@ -56,7 +56,8 @@ export async function manageGroupMember(formData: FormData): Promise<void> {
   const groupId = String(formData.get("groupId") ?? "");
   const userId = String(formData.get("userId") ?? "");
   const action = String(formData.get("action") ?? "");
-  if (!/^[0-9a-f-]{36}$/i.test(userId) || !["promote", "demote", "remove"].includes(action)) {
+  if (!/^[0-9a-f-]{36}$/i.test(userId) || !["promote", "demote", "remove"].includes(action)
+      || (action === "remove" && formData.get("confirmRemove") !== "yes")) {
     redirect(`/groups/${groupId}?error=member`);
   }
   const supabase = await adminContext(groupId);
@@ -86,4 +87,32 @@ export async function transferOrganizer(formData: FormData): Promise<void> {
   revalidatePath(`/groups/${groupId}`);
   revalidatePath(`/trips/${tripId}`);
   redirect(`/groups/${groupId}`);
+}
+
+export async function leaveGroup(formData: FormData): Promise<void> {
+  const groupId = String(formData.get("groupId") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(groupId)) redirect("/groups");
+  if (formData.get("confirmLeave") !== "yes") redirect(`/groups/${groupId}?error=leave`);
+  const supabase = await createServerSupabaseClient();
+  const { data: auth, error: authError } = await supabase.auth.getClaims();
+  if (authError || !auth?.claims?.sub) redirect("/?next=%2Fgroups");
+  const { error } = await supabase.rpc("leave_group", { p_group_id: groupId });
+  if (error) redirect(`/groups/${groupId}?error=leave`);
+  revalidatePath("/groups");
+  redirect("/groups");
+}
+
+export async function deleteGroup(formData: FormData): Promise<void> {
+  const groupId = String(formData.get("groupId") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+  const supabase = await adminContext(groupId);
+  const { data: group } = await supabase.from("groups")
+    .select("name").eq("id", groupId).maybeSingle();
+  if (!group || confirmation !== group.name) {
+    redirect(`/groups/${groupId}?error=delete-confirmation`);
+  }
+  const { error } = await supabase.rpc("delete_group", { p_group_id: groupId });
+  if (error) redirect(`/groups/${groupId}?error=delete`);
+  revalidatePath("/groups");
+  redirect("/groups");
 }
