@@ -158,128 +158,132 @@ export default async function TripPage({
           placeName={sharePlace?.name} meetingAt={trip.meeting_at} meetingPoint={trip.meeting_point}
         />}
         <div className="trip-dashboard">
-        {isOrganizer && trip.status === "draft" && <section className="group-list trip-settings">
-          <h2>แก้รายละเอียดทริป</h2>
-          <form action={editDraftTrip} className="group-form">
-            <input type="hidden" name="tripId" value={tripId} />
-            <label htmlFor="edit-trip-title">ชื่อทริป</label>
-            <input id="edit-trip-title" name="title" required maxLength={160} defaultValue={trip.title} />
-            <label htmlFor="edit-trip-description">รายละเอียด</label>
-            <textarea id="edit-trip-description" name="description" maxLength={1000} rows={3} defaultValue={trip.description} />
-            <label htmlFor="edit-trip-deadline">เวลาปิดโหวต ({trip.timezone})</label>
-            <input id="edit-trip-deadline" name="deadlineLocal" type="datetime-local" required defaultValue={zonedInputValue(trip.vote_deadline, trip.timezone)} />
-            <button className="primary-button" type="submit">บันทึกการแก้ไข</button>
-          </form>
-        </section>}
-        {!isOrganizer && myParticipation && trip.status !== "cancelled" && trip.status !== "completed" && (
-          <section id="invitation-section" className="group-list trip-invitation">
-            <h2>คำเชิญของคุณ</h2>
-            <p>สถานะ: {invitationLabels[myParticipation.invitation_status] ?? myParticipation.invitation_status}</p>
-            <p className="field-hint">การรับคำเชิญต่างจากการตอบรับแผนเดินทาง หลังยืนยันแผนแล้วคุณต้องเลือกว่าจะไปหรือไม่อีกครั้ง</p>
-            {myParticipation.invitation_status !== "interested" && <form action={respondToTripInvitation}>
-              <input type="hidden" name="tripId" value={tripId} />
-              <button className="primary-button" type="submit" name="status" value="interested">
-                {myParticipation.invitation_status === "declined" ? "กลับเข้าร่วมทริป" : "รับคำเชิญ"}
-              </button>
-            </form>}
-            {myParticipation.invitation_status !== "declined" && <details className="danger-zone">
-              <summary>ไม่ร่วมทริป</summary>
-              <p>คะแนนโหวตและคำตอบรับแผนปัจจุบันของคุณจะถูกลบ หากกลับเข้าร่วมจะต้องตอบใหม่</p>
-              <form action={respondToTripInvitation} className="group-form">
-                <input type="hidden" name="tripId" value={tripId} />
-                <input type="hidden" name="status" value="declined" />
-                <label className="check-row"><input type="checkbox" name="confirmDecline" value="yes" required /> ยืนยันว่าไม่ร่วมทริปนี้</label>
-                <button className="secondary-button danger-button" type="submit">ไม่ร่วมทริป</button>
-              </form>
-            </details>}
-          </section>
-        )}
-        {isOrganizer && trip.status !== "cancelled" && trip.status !== "completed" && (
-          <CreateInvite groupId={trip.group_id} tripId={trip.id} />
-        )}
-        {isOrganizer && !!inviteLinks?.length && <section className="group-list trip-invites">
-          <h2>ลิงก์เชิญทริป</h2>
-          <ul>{inviteLinks.map((link) => <li key={link.id}>
-            <strong>{link.revoked_at ? "ยกเลิกแล้ว" : "ยังไม่เพิกถอน"}</strong>
-            <span>หมดอายุ {new Date(link.expires_at).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</span>
-            {!link.revoked_at && <form action={revokeInvite}>
-              <input type="hidden" name="groupId" value={trip.group_id} />
-              <input type="hidden" name="tripId" value={tripId} />
-              <input type="hidden" name="inviteId" value={link.id} />
-              <button className="text-button" type="submit">ยกเลิกลิงก์นี้</button>
-            </form>}
-          </li>)}</ul>
-        </section>}
-        <section className="group-list trip-people">
-          <h2>ผู้ร่วมทริป</h2>
-          {participants?.length ? <ul>{participants.map((person) => <li key={person.user_id}>
-            <strong>{names.get(person.user_id) ?? person.user_id.slice(0, 8)}</strong>
-            <span>{invitationLabels[person.invitation_status] ?? person.invitation_status}</span>
-            {isOrganizer && trip.status === "draft" && person.user_id !== auth.claims.sub && (
-              <form action={removeTripParticipant}>
-                <input type="hidden" name="tripId" value={tripId} />
-                <input type="hidden" name="userId" value={person.user_id} />
-                <button className="text-button" type="submit">นำออก</button>
-              </form>
+          <div className="dashboard-main">
+            {!isOrganizer && myParticipation && trip.status !== "cancelled" && trip.status !== "completed" && (
+              <section id="invitation-section" className="group-list trip-invitation">
+                <h2>คำเชิญของคุณ</h2>
+                <p>สถานะ: {invitationLabels[myParticipation.invitation_status] ?? myParticipation.invitation_status}</p>
+                <p className="field-hint">การรับคำเชิญต่างจากการตอบรับแผนเดินทาง หลังยืนยันแผนแล้วคุณต้องเลือกว่าจะไปหรือไม่อีกครั้ง</p>
+                {myParticipation.invitation_status !== "interested" && <form action={respondToTripInvitation}>
+                  <input type="hidden" name="tripId" value={tripId} />
+                  <button className="primary-button" type="submit" name="status" value="interested">
+                    {myParticipation.invitation_status === "declined" ? "กลับเข้าร่วมทริป" : "รับคำเชิญ"}
+                  </button>
+                </form>}
+                {myParticipation.invitation_status !== "declined" && <details className="danger-zone">
+                  <summary>ไม่ร่วมทริป</summary>
+                  <p>คะแนนโหวตและคำตอบรับแผนปัจจุบันของคุณจะถูกลบ หากกลับเข้าร่วมจะต้องตอบใหม่</p>
+                  <form action={respondToTripInvitation} className="group-form">
+                    <input type="hidden" name="tripId" value={tripId} />
+                    <input type="hidden" name="status" value="declined" />
+                    <label className="check-row"><input type="checkbox" name="confirmDecline" value="yes" required /> ยืนยันว่าไม่ร่วมทริปนี้</label>
+                    <button className="secondary-button danger-button" type="submit">ไม่ร่วมทริป</button>
+                  </form>
+                </details>}
+              </section>
             )}
-          </li>)}</ul> : <p>ยังไม่มีผู้ร่วมทริป</p>}
-        </section>
-        {isOrganizer && trip.status === "draft" && !!availableMembers.length && (
-          <section className="group-list trip-add-person">
-            <h2>ชวนสมาชิกกลุ่มเข้าทริป</h2>
-            <form action={addTripParticipant} className="group-form">
-              <input type="hidden" name="tripId" value={tripId} />
-              <label htmlFor="participant-user">เลือกสมาชิก</label>
-              <select id="participant-user" name="userId" required>
-                {availableMembers.map((member) => <option key={member.user_id} value={member.user_id}>
-                  {names.get(member.user_id) ?? member.user_id.slice(0, 8)}
-                </option>)}
-              </select>
-              <button className="primary-button" type="submit">ส่งคำเชิญในทริป</button>
-            </form>
-          </section>
-        )}
-        <VotingSection
-          trip={trip}
-          userId={auth.claims.sub}
-          participants={participants ?? []}
-          groupUserIds={userIds}
-          names={names}
-        />
-        <ConfirmationSection
-          trip={trip}
-          userId={auth.claims.sub}
-          participants={participants ?? []}
-          groupUserIds={userIds}
-          names={names}
-        />
-        {isOrganizer && (
-          <section className="group-list trip-management">
-            <h2>จัดการทริป</h2>
-            {trip.status === "confirmed" && canComplete && <form action={completeTrip}>
-              <input type="hidden" name="tripId" value={tripId} />
-              <button className="secondary-button" type="submit">ทำเครื่องหมายว่าจบทริปแล้ว</button>
-            </form>}
-            {trip.status === "confirmed" && !canComplete && <p className="form-note">ปุ่มจบทริปจะใช้ได้หลังวันเดินทางสิ้นสุด</p>}
-            {["draft", "voting", "confirmed"].includes(trip.status) && <form action={cancelTrip} className="group-form">
-              <input type="hidden" name="tripId" value={tripId} />
-              <label htmlFor="cancel-reason">เหตุผลที่ยกเลิก (ไม่บังคับ)</label>
-              <input id="cancel-reason" name="reason" maxLength={500} />
-              <label className="check-row"><input type="checkbox" name="confirmCancel" value="yes" required /> ยืนยันว่าต้องการยกเลิกทริปนี้ ผู้ร่วมทริปจะโหวตหรือตอบรับไม่ได้อีก</label>
-              <button className="text-button danger" type="submit">ยกเลิกทริป</button>
-            </form>}
-            {["draft", "cancelled", "completed"].includes(trip.status) && <details className="danger-zone">
-              <summary>ลบทริปถาวร</summary>
-              <p>การลบจะลบคำตอบและประวัติแจ้งเตือนของทริป กู้คืนจากหน้าเว็บไม่ได้</p>
-              <form action={deleteTrip} className="group-form">
+            <VotingSection
+              trip={trip}
+              userId={auth.claims.sub}
+              participants={participants ?? []}
+              groupUserIds={userIds}
+              names={names}
+            />
+            <ConfirmationSection
+              trip={trip}
+              userId={auth.claims.sub}
+              participants={participants ?? []}
+              groupUserIds={userIds}
+              names={names}
+            />
+          </div>
+          <div className="dashboard-side">
+            <section className="group-list trip-people">
+              <h2>ผู้ร่วมทริป</h2>
+              {participants?.length ? <ul>{participants.map((person) => <li key={person.user_id}>
+                <strong>{names.get(person.user_id) ?? person.user_id.slice(0, 8)}</strong>
+                <span>{invitationLabels[person.invitation_status] ?? person.invitation_status}</span>
+                {isOrganizer && trip.status === "draft" && person.user_id !== auth.claims.sub && (
+                  <form action={removeTripParticipant}>
+                    <input type="hidden" name="tripId" value={tripId} />
+                    <input type="hidden" name="userId" value={person.user_id} />
+                    <button className="text-button" type="submit">นำออก</button>
+                  </form>
+                )}
+              </li>)}</ul> : <p>ยังไม่มีผู้ร่วมทริป</p>}
+            </section>
+            {isOrganizer && trip.status === "draft" && !!availableMembers.length && (
+              <section className="group-list trip-add-person">
+                <h2>ชวนสมาชิกกลุ่มเข้าทริป</h2>
+                <form action={addTripParticipant} className="group-form">
+                  <input type="hidden" name="tripId" value={tripId} />
+                  <label htmlFor="participant-user">เลือกสมาชิก</label>
+                  <select id="participant-user" name="userId" required>
+                    {availableMembers.map((member) => <option key={member.user_id} value={member.user_id}>
+                      {names.get(member.user_id) ?? member.user_id.slice(0, 8)}
+                    </option>)}
+                  </select>
+                  <button className="primary-button" type="submit">ส่งคำเชิญในทริป</button>
+                </form>
+              </section>
+            )}
+            {isOrganizer && trip.status !== "cancelled" && trip.status !== "completed" && (
+              <CreateInvite groupId={trip.group_id} tripId={trip.id} />
+            )}
+            {isOrganizer && !!inviteLinks?.length && <section className="group-list trip-invites">
+              <h2>ลิงก์เชิญทริป</h2>
+              <ul>{inviteLinks.map((link) => <li key={link.id}>
+                <strong>{link.revoked_at ? "ยกเลิกแล้ว" : "ยังไม่เพิกถอน"}</strong>
+                <span>หมดอายุ {new Date(link.expires_at).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</span>
+                {!link.revoked_at && <form action={revokeInvite}>
+                  <input type="hidden" name="groupId" value={trip.group_id} />
+                  <input type="hidden" name="tripId" value={tripId} />
+                  <input type="hidden" name="inviteId" value={link.id} />
+                  <button className="text-button" type="submit">ยกเลิกลิงก์นี้</button>
+                </form>}
+              </li>)}</ul>
+            </section>}
+            {isOrganizer && trip.status === "draft" && <section className="group-list trip-settings">
+              <h2>แก้รายละเอียดทริป</h2>
+              <form action={editDraftTrip} className="group-form">
                 <input type="hidden" name="tripId" value={tripId} />
-                <label htmlFor="delete-trip-confirmation">พิมพ์ชื่อทริป “{trip.title}” เพื่อยืนยัน</label>
-                <input id="delete-trip-confirmation" name="confirmation" required autoComplete="off" />
-                <button className="secondary-button danger-button" type="submit">ลบทริปถาวร</button>
+                <label htmlFor="edit-trip-title">ชื่อทริป</label>
+                <input id="edit-trip-title" name="title" required maxLength={160} defaultValue={trip.title} />
+                <label htmlFor="edit-trip-description">รายละเอียด</label>
+                <textarea id="edit-trip-description" name="description" maxLength={1000} rows={3} defaultValue={trip.description} />
+                <label htmlFor="edit-trip-deadline">เวลาปิดโหวต ({trip.timezone})</label>
+                <input id="edit-trip-deadline" name="deadlineLocal" type="datetime-local" required defaultValue={zonedInputValue(trip.vote_deadline, trip.timezone)} />
+                <button className="primary-button" type="submit">บันทึกการแก้ไข</button>
               </form>
-            </details>}
-          </section>
-        )}
+            </section>}
+            {isOrganizer && (
+              <section className="group-list trip-management">
+                <h2>จัดการทริป</h2>
+                {trip.status === "confirmed" && canComplete && <form action={completeTrip}>
+                  <input type="hidden" name="tripId" value={tripId} />
+                  <button className="secondary-button" type="submit">ทำเครื่องหมายว่าจบทริปแล้ว</button>
+                </form>}
+                {trip.status === "confirmed" && !canComplete && <p className="form-note">ปุ่มจบทริปจะใช้ได้หลังวันเดินทางสิ้นสุด</p>}
+                {["draft", "voting", "confirmed"].includes(trip.status) && <form action={cancelTrip} className="group-form">
+                  <input type="hidden" name="tripId" value={tripId} />
+                  <label htmlFor="cancel-reason">เหตุผลที่ยกเลิก (ไม่บังคับ)</label>
+                  <input id="cancel-reason" name="reason" maxLength={500} />
+                  <label className="check-row"><input type="checkbox" name="confirmCancel" value="yes" required /> ยืนยันว่าต้องการยกเลิกทริปนี้ ผู้ร่วมทริปจะโหวตหรือตอบรับไม่ได้อีก</label>
+                  <button className="text-button danger" type="submit">ยกเลิกทริป</button>
+                </form>}
+                {["draft", "cancelled", "completed"].includes(trip.status) && <details className="danger-zone">
+                  <summary>ลบทริปถาวร</summary>
+                  <p>การลบจะลบคำตอบและประวัติแจ้งเตือนของทริป กู้คืนจากหน้าเว็บไม่ได้</p>
+                  <form action={deleteTrip} className="group-form">
+                    <input type="hidden" name="tripId" value={tripId} />
+                    <label htmlFor="delete-trip-confirmation">พิมพ์ชื่อทริป “{trip.title}” เพื่อยืนยัน</label>
+                    <input id="delete-trip-confirmation" name="confirmation" required autoComplete="off" />
+                    <button className="secondary-button danger-button" type="submit">ลบทริปถาวร</button>
+                  </form>
+                </details>}
+              </section>
+            )}
+          </div>
         </div>
       </div>
     </main></>
