@@ -12,7 +12,7 @@ export default async function HomePage({
       <div className="card">
         <div className="hero">
           <div className="hero-copy">
-            <div className="brand"><span className="brand-mark" aria-hidden="true" /> TripSync</div>
+            <div className="brand"><span className="brand-mark" aria-hidden="true" /> WePlanGo</div>
             <h1>นัดทริปให้<br />ลงตัวทั้งกลุ่ม</h1>
             <p>ชวนเพื่อน เลือกวัน โหวตสถานที่ แล้วเห็นทันทีว่าใครว่าง ใครยังไม่ตอบ และแผนล่าสุดคืออะไร</p>
             <GoogleSignInButton nextPath={safeNextPath(next)} />
@@ -29,7 +29,7 @@ export default async function HomePage({
             </div>
           </div>
         </div>
-        <div className="hero-steps" aria-label="วิธีใช้ TripSync">
+        <div className="hero-steps" aria-label="วิธีใช้ WePlanGo">
           <div><strong>เริ่มจากกลุ่มเพื่อน</strong><p>รวมคนที่อยากไปด้วยกันในลิงก์เดียว</p></div>
           <div><strong>หาวันที่ตรงกัน</strong><p>ทุกคนตอบวันและสถานที่ที่สะดวก</p></div>
           <div><strong>ยืนยันแล้วไปกัน</strong><p>แผนล่าสุดและคำตอบรับอยู่ที่เดียวกัน</p></div>

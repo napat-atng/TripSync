@@ -3,8 +3,8 @@ import Link from "next/link";
 export function SiteHeader({ signedIn = true }: { signedIn?: boolean }) {
   return <header className="site-header">
     <div className="site-header-inner">
-      <Link href={signedIn ? "/groups" : "/"} className="brand" aria-label="TripSync หน้าแรก">
-        <span className="brand-mark" aria-hidden="true" /> TripSync
+      <Link href={signedIn ? "/groups" : "/"} className="brand" aria-label="WePlanGo หน้าแรก">
+        <span className="brand-mark" aria-hidden="true" /> WePlanGo
       </Link>
       {signedIn && <nav className="site-nav" aria-label="เมนูหลัก">
         <Link href="/groups">กลุ่มของฉัน</Link>

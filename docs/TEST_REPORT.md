@@ -1,8 +1,8 @@
-# TripSync MVP — ผลทดสอบ
+# ผลทดสอบ MVP — ก่อนเปลี่ยนชื่อเป็น WePlanGo
 
 วันที่ตรวจ: 13 ตุลาคม 2026 (Asia/Bangkok)
 
-เว็บ production: https://tripsync-napat6.vercel.app
+เว็บ production ณ วันที่ทดสอบ: https://tripsync-napat6.vercel.app
 
 ทริปทดสอบ: `4e80a176-cdc4-4322-994b-316987c5c244` ในกลุ่ม `4e49ae61-a410-4b58-81db-8c9cb82cbbb0`
 

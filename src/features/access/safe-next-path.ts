@@ -9,8 +9,8 @@ export function safeNextPath(value: string | null | undefined): string {
   }
 
   try {
-    const url = new URL(value, "https://tripsync.invalid");
-    if (url.origin !== "https://tripsync.invalid") return "/groups";
+    const url = new URL(value, "https://app.invalid");
+    if (url.origin !== "https://app.invalid") return "/groups";
     return `${url.pathname}${url.search}`;
   } catch {
     return "/groups";

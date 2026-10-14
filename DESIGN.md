@@ -1,5 +1,5 @@
 ---
-name: TripSync
+name: WePlanGo
 description: A shared trip planning workspace that makes group decisions easy to read.
 colors:
   ink: "#183540"
@@ -48,11 +48,11 @@ components:
     height: "46px"
 ---
 
-# Design System: TripSync
+# Design System: WePlanGo
 
 ## Overview
 
-**Creative North Star: “สมุดนัดทริป” (Journey Notebook).** TripSync should feel like a clear, friendly place where friends settle a plan together. The interface leads with the current decision, shows who has answered, and keeps setup and management nearby without competing for attention.
+**Creative North Star: “สมุดนัดทริป” (Journey Notebook).** WePlanGo should feel like a clear, friendly place where friends settle a plan together. The interface leads with the current decision, shows who has answered, and keeps setup and management nearby without competing for attention.
 
 **Key Characteristics:** Deep ink framing, warm yellow for invitations to act, quiet paper surfaces, and compact status colors used only where they explain data.
 

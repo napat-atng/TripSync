@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-The Next.js app starts in `src/app/`. Treat `docs/README.md`, `docs/STRUCTURE.md`, `docs/BUILD_PLAN.md`, and `docs/features/` as the current MVP specification. `TRIPSYNC_APP_STRUCTURE.md` is the original draft; follow `docs/` when they differ.
+The Next.js app starts in `src/app/`. Treat `docs/README.md`, `docs/STRUCTURE.md`, `docs/BUILD_PLAN.md`, and `docs/features/` as the current MVP specification. `WEPLANGO_APP_STRUCTURE.md` is the original draft; follow `docs/` when they differ.
 
 When implementing the app, use the planned Next.js layout: `src/app/` for routes, `src/components/` for shared UI, `src/features/{access,groups,trips,voting,notifications}/` for domain behavior, and `src/lib/` for shared clients and validation. Put SQL schema changes in `supabase/migrations/` and database policy tests in `supabase/tests/`. There is no asset directory yet; add one only when assets are needed.
 

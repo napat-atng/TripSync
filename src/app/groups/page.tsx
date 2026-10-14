@@ -4,6 +4,10 @@ import { createGroup } from "@/features/groups/actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/SiteHeader";
 
+function requestTimeMs(): number {
+  return Date.now();
+}
+
 export default async function GroupsPage({
   searchParams,
 }: {
@@ -36,7 +40,7 @@ export default async function GroupsPage({
   const invitationByTrip = new Map(invitations?.map((item) => [item.trip_id, item.invitation_status]));
   const submissionByTrip = new Map(submissions?.map((item) => [item.trip_id, item]));
   const rsvpKeys = new Set(rsvps?.map((item) => `${item.trip_id}:${item.plan_version}`));
-  const now = Date.now();
+  const now = requestTimeMs();
   const pendingTrips = (trips ?? []).flatMap((trip) => {
     const invitation = invitationByTrip.get(trip.id);
     const isOrganizer = trip.organizer_id === data.claims.sub;

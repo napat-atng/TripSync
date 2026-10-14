@@ -1,4 +1,4 @@
-# TripSync product
+# WePlanGo product
 
 <!-- impeccable:product-schema 1 -->
 
@@ -16,7 +16,7 @@ Help a group agree on who is joining, when to travel, where to go, and who confi
 
 ## Operating Context
 
-People open TripSync on phones and computers and share invitation links through their existing chats. Organizers create groups and trips, collect date and place answers, and confirm a plan. Invited friends respond to invitations, vote, and RSVP to the current plan.
+People open WePlanGo on phones and computers and share invitation links through their existing chats. Organizers create groups and trips, collect date and place answers, and confirm a plan. Invited friends respond to invitations, vote, and RSVP to the current plan.
 
 ## Capabilities and Constraints
 
@@ -28,7 +28,7 @@ People open TripSync on phones and computers and share invitation links through 
 
 ## Brand Commitments
 
-Keep the TripSync name and a conversational, clear Thai interface. No supplied logo, photography, or other binding visual assets are recorded.
+Keep the WePlanGo name and a conversational, clear Thai interface. No supplied logo, photography, or other binding visual assets are recorded.
 
 ## Evidence on Hand
 
