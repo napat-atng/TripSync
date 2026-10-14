@@ -75,22 +75,35 @@ export async function VotingSection({
     zonedInputValue(trip.vote_deadline, trip.timezone).slice(0, 10),
   ].sort().at(-1) ?? "";
   const hasInvalidDates = dates.some((option) => option.ends_on < latestValidDate);
+  const leadingDateCount = Math.max(0, ...summary.dates.map((item) => item.available));
+  const leadingPlaceCount = Math.max(0, ...summary.places.map((item) => item.selected));
 
   return (
     <section id="vote-section" className="group-list">
-      <h2>ตัวเลือกและโหวต</h2>
-      <p className="section-intro">{trip.status === "draft" ? "ช่วยกันเสนอวันและสถานที่ ก่อนผู้จัดเปิดโหวต" : "ดูผลของกลุ่มและเลือกคำตอบของคุณก่อนหมดเวลา"}</p>
+      <h2>ผลโหวตและตัวเลือก</h2>
+      <p className="section-intro">{trip.status === "draft" ? "ช่วยกันเสนอวันและสถานที่ ก่อนผู้จัดเปิดโหวต" : trip.status === "voting" ? "ดูผลของกลุ่มและเลือกคำตอบของคุณก่อนหมดเวลา" : "ย้อนดูผลโหวตที่ใช้ประกอบการเลือกแผน"}</p>
       {deadlineSoon && needsAnswer && <p className="form-note" role="status">
         ใกล้ปิดโหวตแล้ว: {`${!mySubmission?.date_submitted_at ? "ตอบวัน" : ""}${!mySubmission?.date_submitted_at && !mySubmission?.place_submitted_at ? "และ" : ""}${!mySubmission?.place_submitted_at ? "ตอบสถานที่" : ""}`}ก่อนกำหนด
       </p>}
       {trip.status === "voting" && !canSubmit && !isBeforeDeadline(trip.vote_deadline)
         && <p>หมดเวลาโหวตแล้ว รอผู้จัดสรุปแผน</p>}
-      <h3>วันเดินทาง</h3>
-      {dates.length ? <ul>{dates.map((option) => {
+      {trip.status === "voting" && <div className="vote-summary">
+        <h3>การตอบของกลุ่ม</h3>
+        <div className="response-progress"><span>วันเดินทาง <strong>{summary.dateSubmittedCount}/{summary.eligibleCount}</strong></span><span>สถานที่ <strong>{summary.placeSubmittedCount}/{summary.eligibleCount}</strong></span></div>
+        {!!summary.datePendingUserIds.length && <p>ยังไม่ตอบวัน: {summary.datePendingUserIds.map((id) => names.get(id) ?? id.slice(0, 8)).join(", ")}</p>}
+        {!!summary.placePendingUserIds.length && <p>ยังไม่ตอบสถานที่: {summary.placePendingUserIds.map((id) => names.get(id) ?? id.slice(0, 8)).join(", ")}</p>}
+      </div>}
+      <h3 className="result-heading">วันเดินทาง <span>{dates.length} ตัวเลือก</span></h3>
+      {dates.length ? <ul className="result-list">{dates.map((option) => {
         const counts = summary.dates.find((item) => item.id === option.id);
-        return <li key={option.id}>
-          <strong>{option.starts_on}{option.ends_on !== option.starts_on && ` – ${option.ends_on}`}</strong>
-          {trip.status !== "draft" && <span>ว่าง {counts?.available ?? 0} · อาจว่าง {counts?.maybe ?? 0} · ไม่ว่าง {counts?.unavailable ?? 0}</span>}
+        return <li key={option.id} className="result-item">
+          <div className="result-item-top"><strong>{option.starts_on}{option.ends_on !== option.starts_on && ` – ${option.ends_on}`}</strong>
+          {trip.status !== "draft" && (counts?.available ?? 0) === leadingDateCount && leadingDateCount > 0 && <span className="leader-tag">ว่างมากที่สุด</span>}</div>
+          {trip.status !== "draft" && <div className="result-counts" aria-label={`ว่าง ${counts?.available ?? 0} อาจว่าง ${counts?.maybe ?? 0} ไม่ว่าง ${counts?.unavailable ?? 0}`}>
+            <span className="count-available"><b>{counts?.available ?? 0}</b> ว่าง</span>
+            <span className="count-maybe"><b>{counts?.maybe ?? 0}</b> อาจว่าง</span>
+            <span className="count-unavailable"><b>{counts?.unavailable ?? 0}</b> ไม่ว่าง</span>
+          </div>}
           {isOrganizer && trip.status === "draft" && <form action={removeOption}>
             <input type="hidden" name="tripId" value={trip.id} />
             <input type="hidden" name="optionId" value={option.id} />
@@ -119,14 +132,15 @@ export async function VotingSection({
         <button type="submit" className="primary-button">เสนอวัน</button>
       </form>}
 
-      <h3>สถานที่</h3>
-      {places.length ? <ul>{places.map((option) => {
+      <h3 className="result-heading">สถานที่ <span>{places.length} ตัวเลือก</span></h3>
+      {places.length ? <ul className="result-list">{places.map((option) => {
         const counts = summary.places.find((item) => item.id === option.id);
-        return <li key={option.id}>
-          <strong>{option.name}</strong>
+        return <li key={option.id} className="result-item">
+          <div className="result-item-top"><strong>{option.name}</strong>
+          {trip.status !== "draft" && (counts?.selected ?? 0) === leadingPlaceCount && leadingPlaceCount > 0 && <span className="leader-tag">คนเลือกมากที่สุด</span>}</div>
           {option.address && <span>{option.address}</span>}
           {option.map_url && <a href={option.map_url} target="_blank" rel="noopener noreferrer">เปิดแผนที่</a>}
-          {trip.status !== "draft" && <span>เลือก {counts?.selected ?? 0} คน</span>}
+          {trip.status !== "draft" && <span className="place-count"><b>{counts?.selected ?? 0}</b> คนเลือก</span>}
           {isOrganizer && trip.status === "draft" && <form action={removeOption}>
             <input type="hidden" name="tripId" value={trip.id} />
             <input type="hidden" name="optionId" value={option.id} />
@@ -167,11 +181,6 @@ export async function VotingSection({
         {!isBeforeDeadline(trip.vote_deadline) && <p className="field-hint">เวลาปิดโหวตผ่านไปแล้ว ผู้จัดต้องแก้เวลาปิดโหวตให้เป็นอนาคตก่อน</p>}
       </form>}
 
-      {trip.status === "voting" && <div className="vote-summary">
-        <p>ตอบวันแล้ว {summary.dateSubmittedCount}/{summary.eligibleCount} · ตอบสถานที่แล้ว {summary.placeSubmittedCount}/{summary.eligibleCount}</p>
-        {!!summary.datePendingUserIds.length && <p>ยังไม่ตอบวัน: {summary.datePendingUserIds.map((id) => names.get(id) ?? id.slice(0, 8)).join(", ")}</p>}
-        {!!summary.placePendingUserIds.length && <p>ยังไม่ตอบสถานที่: {summary.placePendingUserIds.map((id) => names.get(id) ?? id.slice(0, 8)).join(", ")}</p>}
-      </div>}
       {trip.status !== "draft" && <div className="response-matrix">
         <h3>คำตอบของเพื่อนแต่ละคน</h3>
         <p className="section-intro">“ยังไม่ตอบ” ต่างจาก “ไม่ว่าง” และคนที่ไม่ร่วมทริปจะไม่ถูกนับในยอดรวม</p>
@@ -193,9 +202,8 @@ export async function VotingSection({
                 </th>
                 {dates.map((option) => {
                   const answer = dateAnswers.get(`${person.user_id}:${option.id}`);
-                  return <td key={option.id}>{declined ? "ไม่นับ" : !submission?.date_submitted_at ? "ยังไม่ตอบ"
-                    : answer === "available" ? "ว่าง" : answer === "maybe" ? "อาจว่าง"
-                    : answer === "unavailable" ? "ไม่ว่าง" : "ยังไม่ตอบ"}</td>;
+                  const state = declined ? "excluded" : !submission?.date_submitted_at ? "pending" : answer ?? "pending";
+                  return <td key={option.id}><span className="answer-state" data-answer={state}>{declined ? "ไม่นับ" : state === "available" ? "ว่าง" : state === "maybe" ? "อาจว่าง" : state === "unavailable" ? "ไม่ว่าง" : "ยังไม่ตอบ"}</span></td>;
                 })}
                 <td>{declined ? "ไม่นับ" : !submission?.place_submitted_at ? "ยังไม่ตอบ"
                   : placeNames.length ? placeNames.join(", ") : "ไม่มีที่ที่เลือก"}</td>

@@ -147,6 +147,11 @@ export default async function TripPage({
           </div>
           {trip.status === "cancelled" && <p className="form-note">เหตุผลที่ยกเลิก: {trip.cancelled_reason || "ไม่ได้ระบุ"}</p>}
         </header>
+        {trip.status !== "cancelled" && <ol className="trip-journey" aria-label="ขั้นตอนของทริป">
+          <li data-current={trip.status === "draft"} data-done={trip.status !== "draft"}>เตรียมตัวเลือก</li>
+          <li data-current={trip.status === "voting"} data-done={["confirmed", "completed"].includes(trip.status)}>โหวตวันและสถานที่</li>
+          <li data-current={trip.status === "confirmed" || trip.status === "completed"}>ยืนยันแผนและตอบรับ</li>
+        </ol>}
         {pageError && <p className="form-note" role="alert">{errorMessages[pageError] ?? "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"}</p>}
         <div className="next-action" aria-label="สิ่งที่ต้องทำตอนนี้">
           <strong>สิ่งที่ต้องทำตอนนี้</strong>
@@ -182,27 +187,20 @@ export default async function TripPage({
                 </details>}
               </section>
             )}
-            <VotingSection
-              trip={trip}
-              userId={auth.claims.sub}
-              participants={participants ?? []}
-              groupUserIds={userIds}
-              names={names}
-            />
-            <ConfirmationSection
-              trip={trip}
-              userId={auth.claims.sub}
-              participants={participants ?? []}
-              groupUserIds={userIds}
-              names={names}
-            />
+            {["confirmed", "completed"].includes(trip.status) ? <>
+              <ConfirmationSection trip={trip} userId={auth.claims.sub} participants={participants ?? []} groupUserIds={userIds} names={names} />
+              <VotingSection trip={trip} userId={auth.claims.sub} participants={participants ?? []} groupUserIds={userIds} names={names} />
+            </> : <>
+              <VotingSection trip={trip} userId={auth.claims.sub} participants={participants ?? []} groupUserIds={userIds} names={names} />
+              <ConfirmationSection trip={trip} userId={auth.claims.sub} participants={participants ?? []} groupUserIds={userIds} names={names} />
+            </>}
           </div>
           <div className="dashboard-side">
             <section className="group-list trip-people">
               <h2>ผู้ร่วมทริป</h2>
               {participants?.length ? <ul>{participants.map((person) => <li key={person.user_id}>
                 <strong>{names.get(person.user_id) ?? person.user_id.slice(0, 8)}</strong>
-                <span>{invitationLabels[person.invitation_status] ?? person.invitation_status}</span>
+                <span className="participant-state" data-invitation={person.invitation_status}>{invitationLabels[person.invitation_status] ?? person.invitation_status}</span>
                 {isOrganizer && trip.status === "draft" && person.user_id !== auth.claims.sub && (
                   <form action={removeTripParticipant}>
                     <input type="hidden" name="tripId" value={tripId} />

@@ -111,7 +111,12 @@ export async function ConfirmationSection({
       {trip.status === "voting" && !isOrganizer && <p>รอผู้จัดเลือกวันและสถานที่จากผลโหวต</p>}
       {trip.plan_version > 0 && <div className="rsvp-summary">
         <h3>ตอบรับแผนปัจจุบัน</h3>
-        <p>ไป {currentRsvps.filter((item) => item.response === "going").length} · อาจไป {currentRsvps.filter((item) => item.response === "maybe").length} · ไม่ไป {currentRsvps.filter((item) => item.response === "not_going").length} · ยังไม่ตอบ {unansweredCount}</p>
+        <div className="rsvp-counts">
+          <span data-answer="available"><b>{currentRsvps.filter((item) => item.response === "going").length}</b> ไป</span>
+          <span data-answer="maybe"><b>{currentRsvps.filter((item) => item.response === "maybe").length}</b> อาจไป</span>
+          <span data-answer="unavailable"><b>{currentRsvps.filter((item) => item.response === "not_going").length}</b> ไม่ไป</span>
+          <span data-answer="pending"><b>{unansweredCount}</b> ยังไม่ตอบ</span>
+        </div>
         <p>ผู้ที่ไป: {currentRsvps.filter((item) => item.response === "going")
           .map((item) => names.get(item.user_id) ?? item.user_id.slice(0, 8)).join(", ") || "ยังไม่มี"}</p>
         {canRsvp && <>
@@ -137,8 +142,8 @@ export async function ConfirmationSection({
               return <tr key={person.user_id}>
                 <th scope="row">{names.get(person.user_id) ?? person.user_id.slice(0, 8)}</th>
                 <td>{declined ? "ไม่ร่วมทริป" : person.invitation_status === "pending" ? "ยังไม่ตอบคำเชิญ" : "สนใจร่วมทริป"}</td>
-                <td>{declined ? "ไม่ต้องตอบ" : response === "going" ? "ไป" : response === "maybe" ? "อาจไป"
-                  : response === "not_going" ? "ไม่ไป" : "ยังไม่ตอบแผนนี้"}</td>
+                <td><span className="answer-state" data-answer={declined ? "excluded" : response === "going" ? "available" : response === "not_going" ? "unavailable" : response ?? "pending"}>{declined ? "ไม่ต้องตอบ" : response === "going" ? "ไป" : response === "maybe" ? "อาจไป"
+                  : response === "not_going" ? "ไม่ไป" : "ยังไม่ตอบแผนนี้"}</span></td>
               </tr>;
             })}</tbody>
           </table>

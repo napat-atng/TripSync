@@ -70,7 +70,7 @@ export default async function GroupPage({
               {trips?.length ? (
                 <ul>{trips.map((trip) => <li key={trip.id}>
                   <Link href={`/trips/${trip.id}`}><strong>{trip.title}</strong></Link>
-                  <span>{({ draft: "กำลังเตรียม", voting: "กำลังโหวต", confirmed: "ยืนยันแผนแล้ว", completed: "จบทริปแล้ว", cancelled: "ยกเลิกแล้ว" } as Record<string, string>)[trip.status] ?? trip.status} · ผู้จัด {names.get(trip.organizer_id) ?? trip.organizer_id.slice(0, 8)}</span>
+                  <div className="trip-list-meta"><span className="status" data-status={trip.status}>{({ draft: "กำลังเตรียม", voting: "กำลังโหวต", confirmed: "ยืนยันแผนแล้ว", completed: "จบทริปแล้ว", cancelled: "ยกเลิกแล้ว" } as Record<string, string>)[trip.status] ?? trip.status}</span><span>ผู้จัด {names.get(trip.organizer_id) ?? trip.organizer_id.slice(0, 8)}</span></div>
                   {membership?.role === "admin" && ["draft", "voting", "confirmed"].includes(trip.status) && (members?.length ?? 0) > 1 && (
                     <form action={transferOrganizer} className="inline-actions">
                       <input type="hidden" name="groupId" value={groupId} />
